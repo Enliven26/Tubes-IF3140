@@ -1,6 +1,4 @@
 from enum import Enum
-from lib.Transaction import Transaction
-from lib.Resource import Resource
 from twophase.exceptions import LockUpgradeException
 
 class LockType(Enum):
@@ -8,19 +6,19 @@ class LockType(Enum):
     EXCLUSIVE: 1
 
 class Lock:
-    def __init__(self, type: LockType, transaction: Transaction, resource: Resource) -> None:
+    def __init__(self, type: LockType, transaction_id: str, resource_id: str) -> None:
         self.__type = type
-        self.__transaction = transaction
-        self.__resource = resource
+        self.__transaction_id = transaction_id
+        self.__resourc_id = resource_id
 
     def get_type(self) -> LockType:
         return self.__type
     
-    def get_transaction(self) -> Transaction:
-        return self.__transaction
+    def get_transaction_id(self) -> str:
+        return self.__transaction_id
     
-    def get_resource(self) -> Resource:
-        return self.__resource
+    def get_resource_id(self) -> str:
+        return self.__resourc_id
     
     def upgrade(self):
         if (self.__type != LockType.SHARE):
