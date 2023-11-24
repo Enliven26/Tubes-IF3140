@@ -27,7 +27,13 @@ pip install -r requirements.txt
 ```bash
 pip freeze > requirements.txt
 ```
-7. Deactivate virtual environment jika tidak diperlukan lagi.  
+
+7. Pindah ke folder src untuk menjalankan program.  
+```bash
+cd src
+```
+
+8. Deactivate virtual environment jika tidak diperlukan lagi.  
 ```bash
 deactivate
 ```
