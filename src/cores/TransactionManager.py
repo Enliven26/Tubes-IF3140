@@ -27,13 +27,13 @@ class TransactionManager(ABC):
         return self.__instruction_reader.get_next_instruction()
     
     @abstractmethod
-    def _get_next_remaining_instruction(self) -> Instruction:
+    def _get_next_remaining_instruction(self) -> Instruction | None:
         pass
     
     @abstractmethod
     def _process_instruction(self, instruction: Instruction):
         pass
-    
+
     @abstractmethod
     def _print_all_transactions_status(self):
         pass
@@ -52,6 +52,8 @@ class TransactionManager(ABC):
                     
                 else:
                     instruction = self._get_next_remaining_instruction()
+                    if (instruction is None):
+                        break
 
                 self._process_instruction(instruction)
             

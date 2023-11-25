@@ -42,9 +42,6 @@ class TwoPhaseTransactionManager(TransactionManager):
             self.__done_instruction[transaction_id] = done_instructions
 
         done_instructions.append(instruction)
-            
-    def _get_next_remaining_instruction(self) -> Instruction:
-        pass
 
     def __is_commit_instruction(self, instruction: Instruction) -> bool:
         return instruction.get_transaction_type() == InstructionType.C
@@ -129,6 +126,9 @@ class TwoPhaseTransactionManager(TransactionManager):
             for instruction in instructions:
                 self.__process_single_instruction(instruction)
     
+    def _get_next_remaining_instruction(self) -> Instruction | None:
+        return None
+
     def _process_instruction(self, instruction: Instruction):
         self.__process_single_instruction(
             instruction, 
@@ -155,4 +155,4 @@ class TwoPhaseTransactionManager(TransactionManager):
             self._console_log("Transaction", transaction.get_id(), "is", status_str)
 
     def _is_finish_or_stop(self) -> bool:
-        pass
+        return True
