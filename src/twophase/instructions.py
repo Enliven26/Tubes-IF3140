@@ -1,5 +1,5 @@
-from lib.Instruction import Instruction
-from lib.ResourceManager import ResourceManager
+from cores.Instruction import Instruction
+from cores.ResourceManager import ResourceManager
 from twophase.LockManager import LockManager
 from twophase.locks import LockType
 
