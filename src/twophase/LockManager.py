@@ -8,6 +8,10 @@ class LockManager:
         self.__resource_locks: dict[str, list[Lock]] = {}
         self.__transaction_locks: dict[str, list[Lock]] = {}
 
+    def _console_log(self, *args):
+        formatted_message = "[LOCK MANAGER] " + ' '.join(map(str, args))
+        print(formatted_message)
+
     def __initialize_list_if_not_exist(self, transaction_id: str, resource_id: str):
         if self.__resource_locks.get(resource_id) is None:
             self.__resource_locks[resource_id] = []
@@ -45,6 +49,9 @@ class LockManager:
 
         return True
 
+    def is_lock_exist(self, transaction_id: str, resource_id: str, type: LockType):
+        return self.__get_lock(transaction_id, resource_id, type) is not None
+    
     def add_share_lock(self, transaction_id: str, resource_id: str):
         if (self.__get_lock(transaction_id, resource_id) is not None):
             raise LockAlreadyExistException
@@ -59,6 +66,8 @@ class LockManager:
         self.__resource_locks[resource_id].append(lock)
         self.__transaction_locks[transaction_id].append(lock)
 
+        self._console_log("Transaction", transaction_id, "acquired share-lock for resource", resource_id)
+
     def __upgrade_lock(self, transaction_id: str, resource_id: str):
         lock = self.__get_lock(transaction_id, resource_id)
 
@@ -69,6 +78,8 @@ class LockManager:
             raise LockSharingException()
         
         lock.upgrade()
+
+        self._console_log("Transaction", transaction_id, "upgraded share-lock for resource", resource_id, "to exclusive-lock")
 
     def add_or_upgrade_to_exclusive_lock(self, transaction_id: str, resource_id: str):
 
@@ -89,12 +100,20 @@ class LockManager:
             self.__resource_locks[resource_id].append(lock)
             self.__transaction_locks[transaction_id].append(lock)
 
+            self._console_log("Transaction", transaction_id, "acquired exclusive-lock for resource", resource_id)
+
     def unlockAll(self, transaction_id: str):
 
-        locks = self.__transaction_locks[transaction_id]
+        locks = self.__transaction_locks.pop(transaction_id, None)
 
-        for lock in locks:
-            self.__resource_locks[lock.get_resource_id()].remove(lock)
+        if (locks is not None):
+            for lock in locks:
+                resource_id = lock.get_resource_id()
+                resource_lock_list = self.__resource_locks.get(resource_id)
+                if (resource_lock_list is not None):
+                    self.__resource_locks[resource_id].remove(lock)
+                    self._console_log("Transaction", transaction_id, "unlock resource", resource_id)
+                    if (len(self.__resource_locks[resource_id] == 0)):
+                        self.__resource_locks.pop(resource_id)
 
-        locks.clear()
 
