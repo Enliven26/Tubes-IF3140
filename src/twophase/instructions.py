@@ -45,6 +45,9 @@ class WriteInstructionWithLock(AccessInstructionWithLock):
     
     def get_transaction_type(self) -> InstructionType:
         return InstructionType.W
+    
+    def __str__(self) -> str:
+        return f"W({self._get_resource_id()}={self.__update_value}) by transaction {self.get_transaction_id()}"
 
     def execute(self):
         lock_manager = self._get_lock_manager()
@@ -73,6 +76,9 @@ class ReadInstructionWithLock(AccessInstructionWithLock):
     
     def get_transaction_type(self) -> InstructionType:
         return InstructionType.R
+    
+    def __str__(self) -> str:
+        return f"R({self._get_resource_id()}) by transaction {self.get_transaction_id()}"
 
     def execute(self):
         lock_manager = self._get_lock_manager()
@@ -99,6 +105,9 @@ class CommitInstructionWithLock(InstructionWithLock):
     def get_transaction_type(self) -> InstructionType:
         return InstructionType.C
 
+    def __str__(self) -> str:
+        return f"commit by transaction {self.get_transaction_id()}"
+    
     def execute(self):
         lock_manager = self._get_lock_manager()
         transaction_id = self.get_transaction_id()

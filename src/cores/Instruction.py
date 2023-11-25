@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 class InstructionType(Enum):
-    R = 0
-    W = 1
-    C = 2
+    R = "READ"
+    W = "WRITE"
+    C = "COMMIT"
 
 class Instruction(ABC):
 
@@ -18,6 +18,10 @@ class Instruction(ABC):
     def _console_log(self, *args):
         formatted_message = "[INSTRUCTION] " + ' '.join(map(str, args))
         print(formatted_message)
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
 
     @abstractmethod
     def get_transaction_type(self) -> InstructionType:
