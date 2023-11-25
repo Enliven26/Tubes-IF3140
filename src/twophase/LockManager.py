@@ -20,32 +20,29 @@ class LockManager:
             self.__transaction_locks[transaction_id] = []
 
     def __get_lock(self, transaction_id: str, resource_id: str, type: LockType | None = None) -> Lock | None:
-        locks = self.__transaction_locks.get(transaction_id)
+        locks = self.__transaction_locks.get(transaction_id, [])
 
-        if (locks is not None):
-            for lock in locks:
-                if (lock.get_resource_id() == resource_id and (type is None or lock.get_type() == type)):
-                    return lock
+        for lock in locks:
+            if (lock.get_resource_id() == resource_id and (type is None or lock.get_type() == type)):
+                return lock
 
         return None
 
     def __is_sharing_available(self, transaction_id: str, resource_id: str) -> bool:
-        locks = self.__resource_locks.get(resource_id)
+        locks = self.__resource_locks.get(resource_id, [])
 
-        if (locks is not None):
-            for lock in locks:
-                if (lock.get_transaction_id() != transaction_id and lock.get_type() == LockType.EXCLUSIVE):
-                    return False
+        for lock in locks:
+            if (lock.get_transaction_id() != transaction_id and lock.get_type() == LockType.EXCLUSIVE):
+                return False
 
         return True
 
     def __is_exclusive_available(self, transaction_id: str, resource_id: str) -> bool:
-        locks = self.__resource_locks.get(resource_id)
+        locks = self.__resource_locks.get(resource_id, [])
 
-        if (locks is not None):
-            for lock in locks:
-                if (lock.get_transaction_id() != transaction_id):
-                    return False
+        for lock in locks:
+            if (lock.get_transaction_id() != transaction_id):
+                return False
 
         return True
 
@@ -104,16 +101,15 @@ class LockManager:
 
     def unlockAll(self, transaction_id: str):
 
-        locks = self.__transaction_locks.pop(transaction_id, None)
+        locks = self.__transaction_locks.pop(transaction_id, [])
 
-        if (locks is not None):
-            for lock in locks:
-                resource_id = lock.get_resource_id()
-                resource_lock_list = self.__resource_locks.get(resource_id)
-                if (resource_lock_list is not None):
-                    self.__resource_locks[resource_id].remove(lock)
-                    self._console_log("Transaction", transaction_id, "unlock resource", resource_id)
-                    if (len(self.__resource_locks[resource_id] == 0)):
-                        self.__resource_locks.pop(resource_id)
+        for lock in locks:
+            resource_id = lock.get_resource_id()
+            resource_lock_list = self.__resource_locks.get(resource_id)
+            if (resource_lock_list is not None):
+                self.__resource_locks[resource_id].remove(lock)
+                self._console_log("Transaction", transaction_id, "unlock resource", resource_id)
+                if (len(self.__resource_locks[resource_id] == 0)):
+                    self.__resource_locks.pop(resource_id)
 
 

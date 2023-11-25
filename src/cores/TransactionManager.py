@@ -7,10 +7,10 @@ from cores.Instruction import Instruction
 Reader = TypeVar('Reader', bound=InstructionReader)
 
 class TransactionManager(ABC):
-    def __init__(self, instruction_reader: Reader) -> None:
+    def __init__(self, resource_manager: ResourceManager, instruction_reader: Reader) -> None:
         super().__init__()
 
-        self.__resource_manager: ResourceManager = ResourceManager()
+        self.__resource_manager: ResourceManager = resource_manager
         self.__instruction_reader: Reader = instruction_reader
 
     def _console_log(self, *args):
@@ -20,34 +20,46 @@ class TransactionManager(ABC):
     def _get_resource_manager(self):
         return self.__resource_manager
     
-    def _get_next_instruction(self) -> Instruction:
+    def _is_reader_closed(self) -> bool:
+        return self.__instruction_reader.is_closed()
+    
+    def _get_next_instruction_from_file(self) -> Instruction:
         return self.__instruction_reader.get_next_instruction()
     
     @abstractmethod
-    def __process_instruction(self, instruction: Instruction):
+    def _get_next_remaining_instruction(self) -> Instruction:
         pass
-
+    
     @abstractmethod
-    def __process_after_instruction(self):
+    def _process_instruction(self, instruction: Instruction):
         pass
-
-    @abstractmethod
-    def _abort(self, transaction_id: str):
-        pass
-
+    
     @abstractmethod
     def _print_all_transactions_status(self):
+        pass
+
+    @abstractmethod
+    def _is_finish_or_stop(self) -> bool:
         pass
 
     def run(self):
         while True:
             try:
-                instruction = self.__instruction_reader.get_next_instruction()
-                self.__process_instruction(instruction)
-                self.__process_after_instruction()
+                instruction = None
+
+                if (not self._is_reader_closed()):
+                    instruction = self._get_next_instruction_from_file()
+                    
+                else:
+                    instruction = self._get_next_remaining_instruction()
+
+                self._process_instruction(instruction)
             
             except EOFError:
-                self._console_log("No more instruction received")
-                self._print_all_transactions_status()
-                break
+                self.__instruction_reader.close()
+
+                if (self._is_finish_or_stop()):
+                    self._console_log("No more instruction received")
+                    self._print_all_transactions_status()
+                    break
 

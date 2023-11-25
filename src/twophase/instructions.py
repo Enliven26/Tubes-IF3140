@@ -2,6 +2,7 @@ from cores.Instruction import Instruction
 from cores.ResourceManager import ResourceManager
 from twophase.LockManager import LockManager
 from twophase.locks import LockType
+from cores.Instruction import InstructionType
 
 class InstructionWithLock(Instruction):
     def __init__(self, transaction_id: str, lock_manager: LockManager) -> None:
@@ -41,10 +42,13 @@ class WriteInstructionWithLock(AccessInstructionWithLock):
         
         super().__init__(transaction_id, lock_manager, resource_manager, resource_id)
         self.__update_value = update_value
+    
+    def get_transaction_type(self) -> InstructionType:
+        return InstructionType.W
 
     def execute(self):
         lock_manager = self._get_lock_manager()
-        transaction_id = self._get_transaction_id()
+        transaction_id = self.get_transaction_id()
         resource_id = self._get_resource_id()
         resource_manager = self._get_resource_manager()
 
@@ -67,9 +71,12 @@ class ReadInstructionWithLock(AccessInstructionWithLock):
 
         super().__init__(transaction_id, lock_manager, resource_manager, resource_id)
     
+    def get_transaction_type(self) -> InstructionType:
+        return InstructionType.R
+
     def execute(self):
         lock_manager = self._get_lock_manager()
-        transaction_id = self._get_transaction_id()
+        transaction_id = self.get_transaction_id()
         resource_id = self._get_resource_id()
         resource_manager = self._get_resource_manager()
 
@@ -89,9 +96,12 @@ class CommitInstructionWithLock(InstructionWithLock):
 
         super().__init__(transaction_id, lock_manager)
 
+    def get_transaction_type(self) -> InstructionType:
+        return InstructionType.C
+
     def execute(self):
         lock_manager = self._get_lock_manager()
-        transaction_id = self._get_transaction_id()
+        transaction_id = self.get_transaction_id()
 
         self._console_log("Transaction", transaction_id, "committed")
         lock_manager.unlockAll(transaction_id)

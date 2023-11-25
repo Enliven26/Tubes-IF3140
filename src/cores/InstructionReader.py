@@ -1,12 +1,7 @@
 from abc import ABC, abstractmethod
-from enum import Enum
+from cores.Instruction import InstructionType
 from cores.exceptions import InvalidInstructionLineException
 from cores.Instruction import Instruction
-
-class InstructionType(Enum):
-    R = 0
-    W = 1
-    C = 2
 
 class InstructionLine:
     def __init__(
@@ -25,6 +20,7 @@ class InstructionLine:
 class InstructionReader(ABC):
     def __init__(self, file_path: str) -> None:
         self.__file = open(file_path, 'r')
+        self.__is_closed = False
 
     def __parse_line(self, line: str) -> InstructionLine:
         line = line.strip()
@@ -68,11 +64,19 @@ class InstructionReader(ABC):
         return self.__parse_line(line)
     
     @abstractmethod
-    def get_next_instruction(self) -> Instruction:
+    def _get_instruction_from_line(self, instruction_line: InstructionLine) -> Instruction:
         pass
+
+    def get_next_instruction(self) -> Instruction:
+        instruction_line = self._read_line()
+        return self._get_instruction_from_line(instruction_line)
 
     def close(self):
         self.__file.close()
+        self.__is_closed = True
+
+    def is_closed(self):
+        return self.__is_closed
 
     def __del__(self):
         if hasattr(self, '__file') and self.__file is not None:
