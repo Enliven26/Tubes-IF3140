@@ -60,6 +60,11 @@ class InstructionReader(ABC):
 
     def _read_line(self) -> InstructionLine:
         line = self.__file.readline()
+
+        if not line:
+            # End-of-file reached
+            raise EOFError("End of file reached")
+
         return self.__parse_line(line)
     
     @abstractmethod
