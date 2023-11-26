@@ -35,7 +35,7 @@ class ResourceManager:
 
     def print_snapshot(self):
         # PRINT ALL RESOURCE VALUE AT THIS MOMENT
-        self.__log_writer.console_log("Resource snapshot:")
+        self.__log_writer.console_log("[ Resource snapshot ]")
         for key, value in self.__resources.items():
             self.__log_writer.console_log("Resource", key, "=", value.get_value())
 
