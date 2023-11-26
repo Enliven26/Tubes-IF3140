@@ -61,26 +61,36 @@ class TwoPhaseTransactionManager(TransactionManager):
 
     def __abort(self, transaction_id: str):
         done_instructions = self.__done_instruction.pop(transaction_id, [])
-        self.__rollback_queue.append(done_instructions)
+        self._console_log("Transaction", transaction_id, "is aborting")
         self.__lock_manager.unlockAll(transaction_id)
-        self._console_log("Transaction", transaction_id, "is aborted")
+        self.__rollback_queue.append(done_instructions)
+        self.__transactions[transaction_id].roll_back()
 
     def __abort_all(self, transaction_ids: list[str]):
         for transaction_id in transaction_ids:
             self.__abort(transaction_id)
 
     def __dequeue_from_rollback(self):
-        transactions = self.__rollback_queue.popleft()
-        self._console_log("Trying to rollback transaction", transactions[0].get_transaction_id())
-        return transactions
+        instructions = self.__rollback_queue.popleft()
+        transaction_id = instructions[0].get_transaction_id()
+        self.__transactions[transaction_id].reset_status()
+        self._console_log("Trying to rollback transaction", instructions[0].get_transaction_id())
+        return instructions
 
     def __wait(self, instruction: Instruction):
         self.__wait_queue.append(instruction)
+        self.__transactions[instruction.get_transaction_id()].wait()
         self._console_log("Instruction", instruction, "entered wait-queue")
 
     def __unwait(self) -> Instruction:
-        self._console_log("Instruction", Instruction, "leave wait-queue")
-        return self.__wait_queue.popleft()
+        instruction = self.__wait_queue.popleft()
+        self.__transactions[instruction.get_transaction_id()].reset_status()
+        self._console_log("Instruction", instruction, "leave wait-queue")
+        return instruction
+    
+    def __is_in_queue(self, transaction_id):
+        transaction = self.__transactions.get(transaction_id)
+        return transaction is None or transaction.is_waiting() or transaction.is_rolling_back()
 
     def __process_single_instruction(
             self, 
@@ -88,6 +98,10 @@ class TwoPhaseTransactionManager(TransactionManager):
             process_post_rollback: bool = False, 
             process_post_commit: bool = False
         ):
+
+        if (self.__is_in_queue(instruction.get_transaction_id())):
+            self.__wait(instruction)
+            return
 
         try:
             self.__execute_instruction(instruction)

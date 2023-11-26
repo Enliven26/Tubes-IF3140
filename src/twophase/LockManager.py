@@ -28,6 +28,15 @@ class LockManager:
                 return lock
 
         return None
+    
+    def __get_lock_holders(self, resource_id) -> list[str]:
+        locks = self.__resource_locks[resource_id]
+        transaction_ids: list[str] = []
+
+        for lock in locks:
+            transaction_ids.append(lock.get_transaction_id())
+
+        return transaction_ids
 
     def __is_sharing_available(self, transaction_id: str, resource_id: str) -> bool:
         locks = self.__resource_locks.get(resource_id, [])
@@ -55,7 +64,7 @@ class LockManager:
             raise LockAlreadyExistException
         
         if (not self.__is_sharing_available(transaction_id, resource_id)):
-            raise LockSharingException()
+            raise LockSharingException(self.__get_lock_holders())
         
         lock = Lock(LockType.SHARE, transaction_id, resource_id)
 
@@ -73,7 +82,7 @@ class LockManager:
             raise LockNotFoundException()
         
         if (not self.__is_exclusive_available(transaction_id, resource_id)):
-            raise LockSharingException()
+            raise LockSharingException(self.__get_lock_holders())
         
         lock.upgrade()
 
@@ -89,7 +98,7 @@ class LockManager:
         else:
 
             if (not self.__is_exclusive_available(transaction_id, resource_id)):
-                raise LockSharingException()
+                raise LockSharingException(self.__get_lock_holders(resource_id))
                   
             lock = Lock(LockType.EXCLUSIVE, transaction_id, resource_id)
 
