@@ -23,18 +23,21 @@ def get_algorithm_choice() -> int:
         
 def main():
     while True:
-        file_name = input("Input file name: ")
+        # file_name = input("Input file name: ")
+        file_name = "0"
         file_name.rstrip(".txt")
-        choice = get_algorithm_choice()
+        # choice = get_algorithm_choice()
+        choice = 1
 
         transaction_manager: TransactionManager | None = None
-        file_path = os.path.join("/input", file_name, ".txt")
+        file_path = os.path.join("input", file_name + ".txt")
 
         if (choice == 1):
             transaction_manager = TwoPhaseTransactionManager(file_path)
 
         if (transaction_manager is not None):
             transaction_manager.run()
+        break
             
 
 if __name__ == "__main__":

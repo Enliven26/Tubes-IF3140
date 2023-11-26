@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+from cores.LogWritter import LogWriter
 
 class InstructionType(Enum):
     R = "READ"
@@ -11,13 +12,13 @@ class Instruction(ABC):
     def __init__(self, transaction_id: str) -> None:
         super().__init__()
         self.__transaction_id = transaction_id
+        self.__log_writer = LogWriter("INSTRUCTION")
     
     def get_transaction_id(self):
         return self.__transaction_id
     
     def _console_log(self, *args):
-        formatted_message = "[INSTRUCTION] " + ' '.join(map(str, args))
-        print(formatted_message)
+        self.__log_writer.console_log(*args)
 
     @abstractmethod
     def __str__(self) -> str:

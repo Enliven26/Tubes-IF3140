@@ -31,6 +31,7 @@ pip freeze > requirements.txt
 7. Pindah ke folder src untuk menjalankan program.  
 ```bash
 cd src
+python main.py
 ```
 
 8. Deactivate virtual environment jika tidak diperlukan lagi.  

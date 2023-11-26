@@ -3,6 +3,7 @@ from typing import TypeVar
 from cores.InstructionReader import InstructionReader
 from cores.ResourceManager import ResourceManager
 from cores.Instruction import Instruction
+from cores.LogWritter import LogWriter
 
 Reader = TypeVar('Reader', bound=InstructionReader)
 
@@ -12,11 +13,11 @@ class TransactionManager(ABC):
 
         self.__resource_manager: ResourceManager = resource_manager
         self.__instruction_reader: Reader = instruction_reader
+        self.__log_writer = LogWriter("TRANSACTION MANAGER")
 
     def _console_log(self, *args):
-        formatted_message = "[TRANSACTION MANAGER] " + ' '.join(map(str, args))
-        print(formatted_message)
-
+        self.__log_writer.console_log(*args)
+        
     def _get_resource_manager(self):
         return self.__resource_manager
     
@@ -61,7 +62,7 @@ class TransactionManager(ABC):
                 self.__instruction_reader.close()
 
                 if (self._is_finish_or_stop()):
-                    self._console_log("No more instruction received")
+                    self.__log_writer.console_log("No more instruction received")
                     self._print_all_transactions_status()
                     break
 

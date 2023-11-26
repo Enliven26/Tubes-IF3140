@@ -32,25 +32,49 @@ class InstructionReader(ABC):
             # Empty line
             raise InvalidInstructionLineException("Empty line found")
 
+        if len(parts) == 1:
+            raise InvalidInstructionLineException("Missing transaction id")
+
         instruction_type_str = parts[0].upper()
         instruction_type = InstructionType[instruction_type_str] if instruction_type_str in InstructionType.__members__ else None
 
         if not instruction_type:
             # Invalid instruction type
-            return InvalidInstructionLineException("Invalid instruction type found")
+            raise InvalidInstructionLineException("Invalid instruction type found")
 
-        transaction_id = parts[1] if len(parts) > 1 else ""
+        transaction_id = parts[1]
         resource_id = None
         update_value = None
 
-        if len(parts) > 2:
+        if instruction_type == InstructionType.R:
+            if len(parts) == 2:
+                raise InvalidInstructionLineException("Missing resource id")
+            
+            if len(parts) > 3:
+                raise InvalidInstructionLineException("Too many arguments for read instruction")
+
             if '=' in parts[2]:
-                # Write instruction
-                resource_id, update_value = parts[2].split('=')
-                update_value = int(update_value)
-            else:
-                # Read instruction
-                resource_id = parts[2]
+                raise InvalidInstructionLineException("Forbidden character in resource id for read instruction: '='")
+            
+            # Read instruction
+            resource_id = parts[2]
+
+        elif instruction_type == InstructionType.W:
+
+            if len(parts) > 3:
+                raise InvalidInstructionLineException("Too many arguments for write instruction")
+            
+            if '=' not in parts[2]:
+                raise InvalidInstructionLineException("Missing update value on write instruction")
+            
+            resource_part = parts[2].split('=')
+
+            if len(resource_part) > 2:
+                raise InvalidInstructionLineException("Too many '=' character in write instruction")
+
+            # Write instruction
+            resource_id, update_value = resource_part
+            update_value = int(update_value)
 
         return InstructionLine(instruction_type, transaction_id, resource_id, update_value)
 

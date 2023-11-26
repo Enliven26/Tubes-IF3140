@@ -1,17 +1,18 @@
 
 from twophase.locks import Lock, LockType
 from twophase.exceptions import LockNotFoundException, LockAlreadyExistException, LockUpgradeException, LockSharingException
+from cores.LogWritter import LogWriter
 
 class LockManager:
 
     def __init__(self) -> None:
         self.__resource_locks: dict[str, list[Lock]] = {}
         self.__transaction_locks: dict[str, list[Lock]] = {}
+        self.__log_writer = LogWriter("LOCK MANAGER")
 
     def _console_log(self, *args):
-        formatted_message = "[LOCK MANAGER] " + ' '.join(map(str, args))
-        print(formatted_message)
-
+        self.__log_writer.console_log(*args)
+        
     def __initialize_list_if_not_exist(self, transaction_id: str, resource_id: str):
         if self.__resource_locks.get(resource_id) is None:
             self.__resource_locks[resource_id] = []
@@ -46,14 +47,14 @@ class LockManager:
 
         return True
 
-    def is_lock_exist(self, transaction_id: str, resource_id: str, type: LockType):
+    def is_lock_exist(self, transaction_id: str, resource_id: str, type: LockType | None = None):
         return self.__get_lock(transaction_id, resource_id, type) is not None
     
     def add_share_lock(self, transaction_id: str, resource_id: str):
         if (self.__get_lock(transaction_id, resource_id) is not None):
             raise LockAlreadyExistException
         
-        if (not self.__is_sharing_available()):
+        if (not self.__is_sharing_available(transaction_id, resource_id)):
             raise LockSharingException()
         
         lock = Lock(LockType.SHARE, transaction_id, resource_id)
@@ -71,7 +72,7 @@ class LockManager:
         if (lock is None):
             raise LockNotFoundException()
         
-        if (not self.__is_exclusive_available()):
+        if (not self.__is_exclusive_available(transaction_id, resource_id)):
             raise LockSharingException()
         
         lock.upgrade()
@@ -87,7 +88,7 @@ class LockManager:
 
         else:
 
-            if (not self.__is_exclusive_available()):
+            if (not self.__is_exclusive_available(transaction_id, resource_id)):
                 raise LockSharingException()
                   
             lock = Lock(LockType.EXCLUSIVE, transaction_id, resource_id)
@@ -109,7 +110,7 @@ class LockManager:
             if (resource_lock_list is not None):
                 self.__resource_locks[resource_id].remove(lock)
                 self._console_log("Transaction", transaction_id, "unlock resource", resource_id)
-                if (len(self.__resource_locks[resource_id] == 0)):
+                if (len(self.__resource_locks[resource_id]) == 0):
                     self.__resource_locks.pop(resource_id)
 
 

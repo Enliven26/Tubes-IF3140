@@ -2,8 +2,8 @@ from enum import Enum
 from twophase.exceptions import LockUpgradeException
 
 class LockType(Enum):
-    SHARE: 0
-    EXCLUSIVE: 1
+    SHARE = 0
+    EXCLUSIVE = 1
 
 class Lock:
     def __init__(self, type: LockType, transaction_id: str, resource_id: str) -> None:

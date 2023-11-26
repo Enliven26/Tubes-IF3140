@@ -86,7 +86,7 @@ class ReadInstructionWithLock(AccessInstructionWithLock):
         resource_id = self._get_resource_id()
         resource_manager = self._get_resource_manager()
 
-        if (not lock_manager.is_lock_exist(transaction_id, resource_id, LockType.SHARE)):
+        if (not lock_manager.is_lock_exist(transaction_id, resource_id)):
             lock_manager.add_share_lock(transaction_id, resource_id)
         
         value = resource_manager.read(resource_id)

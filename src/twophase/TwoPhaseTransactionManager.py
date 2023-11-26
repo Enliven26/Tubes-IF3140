@@ -50,7 +50,7 @@ class TwoPhaseTransactionManager(TransactionManager):
         transaction_id = instruction.get_transaction_id()
         self.__has_transaction_committed = True
         self.__transactions[transaction_id].commit()
-        self.__done_instruction.pop()
+        self.__done_instruction.pop(transaction_id)
 
     def __execute_instruction(self, instruction: Instruction):
         instruction.execute()
@@ -130,6 +130,10 @@ class TwoPhaseTransactionManager(TransactionManager):
         return None
 
     def _process_instruction(self, instruction: Instruction):
+        transaction_id = instruction.get_transaction_id()
+        if (self.__transactions.get(transaction_id) == None):
+            self.__transactions[transaction_id] = TwoPhaseTransaction(transaction_id)
+            
         self.__process_single_instruction(
             instruction, 
             process_post_rollback=True,
@@ -153,6 +157,8 @@ class TwoPhaseTransactionManager(TransactionManager):
                 status_str = "still going"
 
             self._console_log("Transaction", transaction.get_id(), "is", status_str)
+
+        self._get_resource_manager().print_snapshot()
 
     def _is_finish_or_stop(self) -> bool:
         return True
