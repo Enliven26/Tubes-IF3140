@@ -30,6 +30,7 @@ class LockManager:
         return None
     
     def __get_conflict_lock_holders(self, transaction_id: str, resource_id: str) -> list[str]:
+        # RETURN ALL TRANSACTION IDS  (EXCEPT ITS OWN ID) THAT HOLD LOCK TO CERTAIN RESOURCE
         locks = self.__resource_locks[resource_id]
         conflict_ids: list[str] = []
 
@@ -41,6 +42,7 @@ class LockManager:
         return conflict_ids
 
     def __is_sharing_available(self, transaction_id: str, resource_id: str) -> bool:
+        # CHECK IF SHARE-LOCK OF CERTAIN RESOURCE CAN BE ACQUIRED
         locks = self.__resource_locks.get(resource_id, [])
 
         for lock in locks:
@@ -50,6 +52,7 @@ class LockManager:
         return True
 
     def __is_exclusive_available(self, transaction_id: str, resource_id: str) -> bool:
+        # CHECK IF EXCLUSIVE-LOCK OF CERTAIN RESOURCE CAN BE ACQUIRED
         locks = self.__resource_locks.get(resource_id, [])
 
         for lock in locks:
@@ -62,6 +65,7 @@ class LockManager:
         return self.__get_lock(transaction_id, resource_id, type) is not None
     
     def add_share_lock(self, transaction_id: str, resource_id: str):
+        # ACQUIRE SHARE-LOCK OF CERTAIN RESOURCE
         if (self.__get_lock(transaction_id, resource_id) is not None):
             raise LockAlreadyExistException
         
@@ -78,6 +82,7 @@ class LockManager:
         self._console_log("Transaction", transaction_id, "acquired share-lock for resource", resource_id)
 
     def __upgrade_lock(self, transaction_id: str, resource_id: str):
+        # UPGRADE LOCK TO EXCLUSIVE-LOCK
         lock = self.__get_lock(transaction_id, resource_id)
 
         if (lock is None):
@@ -91,7 +96,6 @@ class LockManager:
         self._console_log("Transaction", transaction_id, "upgraded share-lock for resource", resource_id, "to exclusive-lock")
 
     def add_or_upgrade_to_exclusive_lock(self, transaction_id: str, resource_id: str):
-
         old_lock = self.__get_lock(transaction_id, resource_id)
 
         if (old_lock is not None):
@@ -112,7 +116,7 @@ class LockManager:
             self._console_log("Transaction", transaction_id, "acquired exclusive-lock for resource", resource_id)
 
     def unlockAll(self, transaction_id: str):
-
+        # UNLOCK ALL LOCKS HOLD BY TRANSACTION BY CERTAIN ID
         locks = self.__transaction_locks.pop(transaction_id, [])
 
         for lock in locks:

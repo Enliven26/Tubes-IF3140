@@ -24,6 +24,7 @@ class TwoPhaseTransactionManager(TransactionManager):
         self.__has_transaction_committed: bool = False
 
     def __is_oldest(self, transaction_id: str, conflict_transaction_ids: list[str]):
+        # CHECK IF TRANSACTION IS THE OLDEST AMONG LOCK HOLDERS OF CERTAIN RESOURCE
         transaction = self.__transactions[transaction_id]
         for conflict_transaction_id in conflict_transaction_ids:
             conflict_transaction = self.__transactions[conflict_transaction_id]
@@ -33,6 +34,7 @@ class TwoPhaseTransactionManager(TransactionManager):
         return True
     
     def __add_to_done_list(self, instruction: Instruction) -> bool:
+        # ADD INSTRUCTION TO DONE LIST FOR ROLLBACK PURPOSE
         transaction_id = instruction.get_transaction_id()
         done_instructions = self.__done_instruction.get(transaction_id)
 
@@ -46,6 +48,7 @@ class TwoPhaseTransactionManager(TransactionManager):
         return instruction.get_transaction_type() == InstructionType.C
     
     def __handle_after_commit(self, instruction: Instruction) -> bool:
+        # CLEAR DATA OF TRANSACTION AFTER COMMIT IF NECESSARY
         transaction_id = instruction.get_transaction_id()
         self.__has_transaction_committed = True
         self.__transactions[transaction_id].commit()
@@ -59,6 +62,7 @@ class TwoPhaseTransactionManager(TransactionManager):
             self.__handle_after_commit(instruction)
 
     def __abort(self, transaction_id: str):
+        # ADD TRANSACTION TO ROLLBACK-QUEUE
         done_instructions = self.__done_instruction.pop(transaction_id, [])
         self._console_log("Transaction", transaction_id, "is aborting")
         self.__lock_manager.unlockAll(transaction_id)
@@ -66,10 +70,12 @@ class TwoPhaseTransactionManager(TransactionManager):
         self.__transactions[transaction_id].roll_back()
 
     def __abort_all(self, transaction_ids: list[str]):
+        # ADD LIST OF TRANSACTION TO ROLLBACK-QUEUE
         for transaction_id in transaction_ids:
             self.__abort(transaction_id)
 
     def __dequeue_from_rollback(self):
+        # ROLLBACK TRANSACTION THAT IS IN FRONT OF THE ROLLBACK-QUEUE
         instructions = self.__rollback_queue.popleft()
         transaction_id = instructions[0].get_transaction_id()
         self.__transactions[transaction_id].reset_status()
@@ -77,17 +83,20 @@ class TwoPhaseTransactionManager(TransactionManager):
         return instructions
 
     def __wait(self, instruction: Instruction):
+        # ADD INSTRUCTION TO WAIT-QUEUE
         self.__wait_queue.append(instruction)
         self.__transactions[instruction.get_transaction_id()].wait()
         self._console_log("Instruction", instruction, "entered wait-queue")
 
     def __unwait(self) -> Instruction:
+        # TRY TO EXECUTE INSTRUCTION THAT IS IN FRONT OF THE WAIT-QUEUE
         instruction = self.__wait_queue.popleft()
         self.__transactions[instruction.get_transaction_id()].reset_status()
         self._console_log("Instruction", instruction, "leave wait-queue")
         return instruction
     
     def __is_in_queue(self, transaction_id):
+        # CHECK IF TRANSACTION IS WAITING OR ROLLING BACK
         transaction = self.__transactions.get(transaction_id)
         return transaction is None or transaction.is_waiting() or transaction.is_rolling_back()
 
@@ -97,7 +106,7 @@ class TwoPhaseTransactionManager(TransactionManager):
             process_post_rollback: bool = False, 
             process_post_commit: bool = False
         ):
-
+        # EXECUTE INSTRUCTION AND HANDLE WAITING AND ROLLING BACK INSTRUCTION AFTER EXECUTION
         if (self.__is_in_queue(instruction.get_transaction_id())):
             self.__wait(instruction)
             return
@@ -126,6 +135,7 @@ class TwoPhaseTransactionManager(TransactionManager):
                     break
 
     def __process_wait(self):
+        # EXECUTE ALL INSTRUCTION IN WAIT-QUEUE AND HANDLE ROLLBACK-QUEUE
         while self.__has_transaction_committed:
             self.__has_transaction_committed = False
 
@@ -136,7 +146,7 @@ class TwoPhaseTransactionManager(TransactionManager):
                 self.__process_single_instruction(instruction, process_post_rollback=True)
 
     def __process_rollback(self):
-
+        # EXECUTE ALL ROLLBACK INSTRUCTIONS
         while(len(self.__rollback_queue) > 0):
             instructions = self.__dequeue_from_rollback()
 

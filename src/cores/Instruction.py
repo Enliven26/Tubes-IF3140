@@ -18,6 +18,7 @@ class Instruction(ABC):
         return self.__transaction_id
     
     def _console_log(self, *args):
+        # USE THIS FOR PRINTING FROM INSTRUCTION PERSPECTIVE
         self.__log_writer.console_log(*args)
 
     @abstractmethod
@@ -30,6 +31,7 @@ class Instruction(ABC):
 
     @abstractmethod
     def execute(self):
+        # THIS METHOD IS THE EXECUTION OF THE INSTRUCTION
         pass
 
 

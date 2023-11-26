@@ -23,6 +23,8 @@ class InstructionReader(ABC):
         self.__is_closed = False
 
     def __parse_line(self, line: str) -> InstructionLine:
+        # PARSE 1 LINE OF INPUT FILE
+
         line = line.strip()
 
         # Extracting information based on the format
@@ -79,6 +81,8 @@ class InstructionReader(ABC):
         return InstructionLine(instruction_type, transaction_id, resource_id, update_value)
 
     def _read_line(self) -> InstructionLine:
+        # READ 1 LINE OF INPUT FILE
+
         line = self.__file.readline()
 
         if not line:
@@ -89,6 +93,7 @@ class InstructionReader(ABC):
     
     @abstractmethod
     def _get_instruction_from_line(self, instruction_line: InstructionLine) -> Instruction:
+        # GET INSTRUCTION OBJECT
         pass
 
     def get_next_instruction(self) -> Instruction:
@@ -96,10 +101,12 @@ class InstructionReader(ABC):
         return self._get_instruction_from_line(instruction_line)
 
     def close(self):
+        # CLOSE FILE READ
         self.__file.close()
         self.__is_closed = True
 
     def is_closed(self):
+        # CHECK IF FILE IS ALREADY CLOSED
         return self.__is_closed
 
     def __del__(self):

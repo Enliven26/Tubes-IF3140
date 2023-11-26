@@ -16,6 +16,7 @@ class TransactionManager(ABC):
         self.__log_writer = LogWriter("TRANSACTION MANAGER")
 
     def _console_log(self, *args):
+        # USE THIS FOR PRINTING FROM TRANSACTION MANAGER PERSPECTIVE
         self.__log_writer.console_log(*args)
         
     def _get_resource_manager(self):
@@ -29,21 +30,26 @@ class TransactionManager(ABC):
     
     @abstractmethod
     def _get_next_remaining_instruction(self) -> Instruction | None:
+        # USE THIS IF NECESSARY TO GET INSTRUCTION AFTER FILE READER IS CLOSED
         pass
     
     @abstractmethod
     def _process_instruction(self, instruction: Instruction):
+        # USE THIS TO PROCESS INSTRUCTION GIVEN
         pass
 
     @abstractmethod
     def _print_all_transactions_status(self):
+        # USE THIS TO PRINT END STATUS OF ALL TRANSACTIONS AND RESOURCES
         pass
 
     @abstractmethod
     def _is_finish_or_stop(self) -> bool:
+        # USE THIS TO DECIDE OF MANAGER STOP AFTER FILE READER IS CLOSED
         pass
 
     def run(self):
+        # CALL THIS TO RUN TRANSACTION MANAGER
         while True:
             try:
                 instruction = None
