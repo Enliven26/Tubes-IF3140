@@ -187,6 +187,9 @@ class TwoPhaseTransactionManager(TransactionManager):
 
             self._console_log("Transaction", transaction.get_id(), "is", status_str)
 
+        for instruction in self.__wait_queue:
+            self._console_log("Instruction", instruction, "is in wait-queue")
+
         self.__resource_handler.print_snapshot()
 
     def _is_finish_or_stop(self) -> bool:
