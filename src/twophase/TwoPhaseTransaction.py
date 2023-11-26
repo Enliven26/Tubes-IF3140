@@ -8,7 +8,7 @@ class TwoPhaseTransaction(Transaction):
         self.__timestamp = timeit.timeit()
 
         # solve bug when timestamp for 2 transaction is equal
-        time.sleep(0.001)
+        time.sleep(0.01)
 
     def get_timestamp(self):
         return self.__timestamp

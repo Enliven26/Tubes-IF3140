@@ -25,7 +25,6 @@ class TwoPhaseTransactionManager(TransactionManager):
 
     def __is_oldest(self, transaction_id: str, conflict_transaction_ids: list[str]):
         transaction = self.__transactions[transaction_id]
-
         for conflict_transaction_id in conflict_transaction_ids:
             conflict_transaction = self.__transactions[conflict_transaction_id]
             if (transaction.get_timestamp() > conflict_transaction.get_timestamp()):
@@ -103,24 +102,28 @@ class TwoPhaseTransactionManager(TransactionManager):
             self.__wait(instruction)
             return
 
-        try:
-            self.__execute_instruction(instruction)
-            
-            if (process_post_rollback and len(self.__rollback_queue) > 0):
-                self.__process_rollback()
+        while True:
+            try:
+                self.__execute_instruction(instruction)
+                
+                if (process_post_rollback and len(self.__rollback_queue) > 0):
+                    self.__process_rollback()
 
-            if (process_post_commit and self.__has_transaction_committed):
-                self.__process_wait()
+                if (process_post_commit and self.__has_transaction_committed):
+                    self.__process_wait()
+
+                break
 
 
-        except LockSharingException as e:
-            transaction_ids = e.get_conflict_transaction_ids()
+            except LockSharingException as e:
+                transaction_ids = e.get_conflict_transaction_ids()
 
-            if (self.__is_oldest(instruction.get_transaction_id(), transaction_ids)):
-                self.__abort_all(transaction_ids)
-            
-            else:
-                self.__wait(instruction)
+                if (self.__is_oldest(instruction.get_transaction_id(), transaction_ids)):
+                    self.__abort_all(transaction_ids)
+                
+                else:
+                    self.__wait(instruction)
+                    break
 
     def __process_wait(self):
         while self.__has_transaction_committed:

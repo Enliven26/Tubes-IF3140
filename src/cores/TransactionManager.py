@@ -62,6 +62,7 @@ class TransactionManager(ABC):
                 self.__instruction_reader.close()
 
                 if (self._is_finish_or_stop()):
+                    print("===============================================================")
                     self.__log_writer.console_log("No more instruction received")
                     self._print_all_transactions_status()
                     break

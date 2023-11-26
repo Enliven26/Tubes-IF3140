@@ -29,14 +29,16 @@ class LockManager:
 
         return None
     
-    def __get_lock_holders(self, resource_id) -> list[str]:
+    def __get_conflict_lock_holders(self, transaction_id: str, resource_id: str) -> list[str]:
         locks = self.__resource_locks[resource_id]
-        transaction_ids: list[str] = []
+        conflict_ids: list[str] = []
 
         for lock in locks:
-            transaction_ids.append(lock.get_transaction_id())
+            conflict_id = lock.get_transaction_id()
+            if (transaction_id != conflict_id):
+                conflict_ids.append(conflict_id)
 
-        return transaction_ids
+        return conflict_ids
 
     def __is_sharing_available(self, transaction_id: str, resource_id: str) -> bool:
         locks = self.__resource_locks.get(resource_id, [])
@@ -64,7 +66,7 @@ class LockManager:
             raise LockAlreadyExistException
         
         if (not self.__is_sharing_available(transaction_id, resource_id)):
-            raise LockSharingException(self.__get_lock_holders())
+            raise LockSharingException(self.__get_conflict_lock_holders(transaction_id, resource_id))
         
         lock = Lock(LockType.SHARE, transaction_id, resource_id)
 
@@ -82,7 +84,7 @@ class LockManager:
             raise LockNotFoundException()
         
         if (not self.__is_exclusive_available(transaction_id, resource_id)):
-            raise LockSharingException(self.__get_lock_holders())
+            raise LockSharingException(self.__get_conflict_lock_holders(transaction_id, resource_id))
         
         lock.upgrade()
 
@@ -98,7 +100,7 @@ class LockManager:
         else:
 
             if (not self.__is_exclusive_available(transaction_id, resource_id)):
-                raise LockSharingException(self.__get_lock_holders(resource_id))
+                raise LockSharingException(self.__get_conflict_lock_holders(transaction_id, resource_id))
                   
             lock = Lock(LockType.EXCLUSIVE, transaction_id, resource_id)
 
