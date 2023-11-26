@@ -1,6 +1,6 @@
 # Tubes-IF3140
 
-## Usage
+## Development
 
 1. Clone repository https://github.com/Enliven26/Tubes-IF3140.  
 3. Pindah ke folder repository  
@@ -33,8 +33,27 @@ pip freeze > requirements.txt
 cd src
 python main.py
 ```
-
+atau  
+```bash
+cd src
+python test.py
+```
 8. Deactivate virtual environment jika tidak diperlukan lagi.  
 ```bash
 deactivate
+```
+
+## Usage  
+### Format input file
+#### Read Instruction
+R [TRANSACTION ID] [RESOURCE ID]
+#### WRITE INSTRUCTION
+W [TRANSACTION ID] [RESOURCE ID]=[INTEGER UPDATE VALUE]
+#### COMMIT INSTRUCTION
+C [TRANSACTION ID]
+
+### Run Program
+```bash
+cd src
+python main.py
 ```
