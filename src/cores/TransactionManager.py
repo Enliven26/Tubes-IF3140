@@ -64,7 +64,8 @@ class TransactionManager(ABC):
 
                 if (self._is_finish_or_stop()):
                     self.__log_writer.console_log_separator()
-                    self.__log_writer.console_log("No more instruction received")
+                    self.__log_writer.console_log("[ No more instruction received ]")
                     self._print_all_transactions_status()
+                    self.__log_writer.console_log_separator()
                     break
 

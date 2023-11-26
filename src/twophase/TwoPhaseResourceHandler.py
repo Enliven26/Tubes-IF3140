@@ -40,10 +40,10 @@ class TwoPhaseResourceHandler:
     
     def rollback(self, transaction_id: str):
         self.__log_writer.console_log_separator()
-        self.__log_writer.console_log("Rolling back resource values:")
+        self.__log_writer.console_log("[ Rolling back resource values from updates of transaction", transaction_id, "]")
         transaction_history = self.__update_history.get(transaction_id, {})
         if (transaction_history):
-            for resource_id, history_list in transaction_history:
+            for resource_id, history_list in transaction_history.items():
                 oldest_value = history_list[0][0]
                 self.__resource_manager.write(resource_id, oldest_value)
 

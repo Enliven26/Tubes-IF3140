@@ -67,7 +67,7 @@ class TwoPhaseTransactionManager(TransactionManager):
         done_instructions = self.__done_instruction.pop(transaction_id, [])
         self._console_log("Transaction", transaction_id, "is aborting")
         self.__resource_handler.rollback(transaction_id)
-        self.__lock_manager.unlockAll(transaction_id)
+        self.__lock_manager.unlock_all(transaction_id)
         self.__rollback_queue.append(done_instructions)
         self.__transactions[transaction_id].roll_back()
 

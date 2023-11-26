@@ -116,4 +116,4 @@ class CommitInstructionWithLock(InstructionWithLock):
         transaction_id = self.get_transaction_id()
 
         self._console_log("Transaction", transaction_id, "committed")
-        lock_manager.unlockAll(transaction_id)
+        lock_manager.unlock_all(transaction_id)
