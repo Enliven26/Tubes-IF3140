@@ -10,7 +10,7 @@ class ResourceManager:
         # USE THIS FOR PRINTING FROM RESOURCE MANAGER PERSPECTIVE
         self.__log_writer.console_log(*args)
 
-    def is_resource_exist(self, id: str):
+    def is_resource_exist(self, id: str) -> bool:
         return self.__resources.get(id) is not None
     
     def __create_resource_if_not_exist(self, id: str, value: int = 0):
@@ -25,8 +25,8 @@ class ResourceManager:
         resource = self.__resources.get(id)
         return resource.get_value()
     
-    def write(self, id: str, value: int):
-        # UPDATE THE VALUE OF CERTAIN RESOURCE
+    def write(self, id: str, value: int) -> int:
+        # UPDATE THE VALUE OF CERTAIN RESOURCE AND RETURN THE OLD VALUE
         self.__create_resource_if_not_exist(id)
         resource = self.__resources.get(id)
         old_value = resource.get_value()

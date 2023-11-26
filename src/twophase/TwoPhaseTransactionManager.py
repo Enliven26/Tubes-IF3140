@@ -2,7 +2,7 @@ from cores.TransactionManager import TransactionManager
 from twophase.TwoPhaseInstructionReader import TwoPhaseInstructionReader
 from cores.Instruction import Instruction, InstructionType
 from twophase.LockManager import LockManager
-from cores.ResourceManager import ResourceManager
+from twophase.TwoPhaseResourceHandler import TwoPhaseResourceHandler
 from collections import deque
 from twophase.TwoPhaseTransaction import TwoPhaseTransaction
 from twophase.exceptions import LockSharingException
@@ -12,10 +12,10 @@ class TwoPhaseTransactionManager(TransactionManager):
     def __init__(self, file_path: str) -> None:
 
         self.__lock_manager = LockManager()
-        resource_manager = ResourceManager()
-        instruction_reader = TwoPhaseInstructionReader(file_path, self.__lock_manager, resource_manager)
+        self.__resource_handler = TwoPhaseResourceHandler()
+        instruction_reader = TwoPhaseInstructionReader(file_path, self.__lock_manager, self.__resource_handler)
 
-        super().__init__(resource_manager, instruction_reader)
+        super().__init__(instruction_reader)
 
         self.__transactions: dict[str, TwoPhaseTransaction] = {}
         self.__wait_queue: deque[Instruction] = deque()
@@ -53,6 +53,7 @@ class TwoPhaseTransactionManager(TransactionManager):
         self.__has_transaction_committed = True
         self.__transactions[transaction_id].commit()
         self.__done_instruction.pop(transaction_id)
+        self.__resource_handler.clear_update_history(transaction_id)
 
     def __execute_instruction(self, instruction: Instruction):
         instruction.execute()
@@ -65,6 +66,7 @@ class TwoPhaseTransactionManager(TransactionManager):
         # ADD TRANSACTION TO ROLLBACK-QUEUE
         done_instructions = self.__done_instruction.pop(transaction_id, [])
         self._console_log("Transaction", transaction_id, "is aborting")
+        self.__resource_handler.rollback(transaction_id)
         self.__lock_manager.unlockAll(transaction_id)
         self.__rollback_queue.append(done_instructions)
         self.__transactions[transaction_id].roll_back()
@@ -185,7 +187,7 @@ class TwoPhaseTransactionManager(TransactionManager):
 
             self._console_log("Transaction", transaction.get_id(), "is", status_str)
 
-        self._get_resource_manager().print_snapshot()
+        self.__resource_handler.print_snapshot()
 
     def _is_finish_or_stop(self) -> bool:
         return True

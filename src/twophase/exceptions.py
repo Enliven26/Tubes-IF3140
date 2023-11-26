@@ -17,5 +17,4 @@ class LockSharingException(Exception):
 
     def get_conflict_transaction_ids(self) -> list[str]:
         return self.__conflict_transaction_ids
-
     
