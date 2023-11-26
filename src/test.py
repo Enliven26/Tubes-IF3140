@@ -1,11 +1,22 @@
-from twophase.TwoPhaseInstructionReader import TwoPhaseInstructionReader
-from twophase.LockManager import LockManager
-from cores.ResourceManager import ResourceManager
+from twophase.TwoPhaseTransactionManager import TwoPhaseTransactionManager
+from cores.TransactionManager import TransactionManager
+import os 
 
 def test():
-    reader = TwoPhaseInstructionReader('input/0.txt', LockManager(), ResourceManager())
-    while True:
-        reader.get_next_instruction()
+
+    file_name = "0"
+    choice = 1
+
+    transaction_manager: TransactionManager | None = None
+    file_path = os.path.join("input", file_name + ".txt")
+
+    if (choice == 1):
+        transaction_manager = TwoPhaseTransactionManager(file_path)
+
+    if (transaction_manager is not None):
+        transaction_manager.run()
+    
+            
 
 if __name__ == "__main__":
     test()

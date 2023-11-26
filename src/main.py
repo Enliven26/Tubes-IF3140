@@ -22,23 +22,20 @@ def get_algorithm_choice() -> int:
             print("[Input Error] Input must be integer")
         
 def main():
-    while True:
-        # file_name = input("Input file name: ")
-        file_name = "0"
-        file_name.rstrip(".txt")
-        # choice = get_algorithm_choice()
-        choice = 1
+    file_name = input("Input file name: ")
+    file_name = "0"
+    file_name.rstrip(".txt")
+    choice = get_algorithm_choice()
+    choice = 1
 
-        transaction_manager: TransactionManager | None = None
-        file_path = os.path.join("input", file_name + ".txt")
+    transaction_manager: TransactionManager | None = None
+    file_path = os.path.join("input", file_name + ".txt")
 
-        if (choice == 1):
-            transaction_manager = TwoPhaseTransactionManager(file_path)
+    if (choice == 1):
+        transaction_manager = TwoPhaseTransactionManager(file_path)
 
-        if (transaction_manager is not None):
-            transaction_manager.run()
-        break
-            
+    if (transaction_manager is not None):
+        transaction_manager.run()
 
 if __name__ == "__main__":
     main()
