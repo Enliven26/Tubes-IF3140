@@ -17,7 +17,7 @@ class TwoPhaseTransactionManager(TransactionManager):
     # 2. Because of point number 1, it's impossible that instructions in wait-queue of certain transaction is out of order.
 
     # 3. 
-    
+
     def __init__(self, file_path: str) -> None:
 
         self.__lock_manager = LockManager()
@@ -116,14 +116,17 @@ class TwoPhaseTransactionManager(TransactionManager):
     def __unwait(self) -> Instruction:
         # TRY TO EXECUTE INSTRUCTION THAT IS IN FRONT OF THE WAIT-QUEUE
         instruction = self.__wait_queue.popleft()
-        self.__transactions[instruction.get_transaction_id()].reset_status()
         self._console_log("Instruction", instruction, "leave wait-queue")
         return instruction
     
     def __is_in_queue(self, transaction_id):
         # CHECK IF TRANSACTION IS WAITING OR ROLLING BACK
         transaction = self.__transactions.get(transaction_id)
-        return transaction is None or transaction.is_waiting() or transaction.is_rolling_back()
+
+        if (transaction is None):
+            return False
+        
+        return transaction.is_waiting() or transaction.is_rolling_back()
 
     def __process_single_instruction(
             self, 
@@ -132,7 +135,9 @@ class TwoPhaseTransactionManager(TransactionManager):
             process_post_commit: bool = False
         ):
         # EXECUTE INSTRUCTION AND HANDLE WAITING AND ROLLING BACK INSTRUCTION AFTER EXECUTION
-        if (self.__is_in_queue(instruction.get_transaction_id())):
+        instruction_id = instruction.get_transaction_id()
+        if (self.__is_in_queue(instruction_id)):
+            self._console_log("[ Transaction", instruction_id,  "is waiting for previous instructions ]")
             self.__wait(instruction)
             return
 
@@ -163,11 +168,18 @@ class TwoPhaseTransactionManager(TransactionManager):
         # EXECUTE ALL INSTRUCTION IN WAIT-QUEUE AND HANDLE ROLLBACK-QUEUE
         while self.__has_transaction_committed:
             self.__has_transaction_committed = False
+            first_waiting_instruction_occurrence: dict[str, bool] = {}
 
             count = len(self.__wait_queue)
 
             for _ in range(count):
                 instruction = self.__unwait()
+                transaction_id = instruction.get_transaction_id()
+
+                if (not first_waiting_instruction_occurrence.get(transaction_id)):
+                    first_waiting_instruction_occurrence[transaction_id] = True
+                    self.__transactions[transaction_id].reset_status()
+
                 self.__process_single_instruction(instruction, process_post_rollback=True)
 
     def __process_rollback(self):
