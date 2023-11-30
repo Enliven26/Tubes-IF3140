@@ -23,10 +23,8 @@ def get_algorithm_choice() -> int:
         
 def main():
     file_name = input("Input file name: ")
-    file_name = "0"
     file_name.rstrip(".txt")
     choice = get_algorithm_choice()
-    choice = 1
 
     transaction_manager: TransactionManager | None = None
     file_path = os.path.join("input", file_name + ".txt")

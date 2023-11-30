@@ -9,6 +9,15 @@ from twophase.exceptions import LockSharingException
 
 
 class TwoPhaseTransactionManager(TransactionManager):
+
+    # CORRECT ASSUMPTION:
+
+    # 1. It's IMPOSSIBLE that instructions from the same transaction can be in both wait-queue and rollback-queue. instructions in rollback queue will be executed right after 1 instruction that trigger the abort and if that rollback instructions can't be executed, it will be put in wait-queue
+
+    # 2. Because of point number 1, it's impossible that instructions in wait-queue of certain transaction is out of order.
+
+    # 3. 
+    
     def __init__(self, file_path: str) -> None:
 
         self.__lock_manager = LockManager()
@@ -62,9 +71,23 @@ class TwoPhaseTransactionManager(TransactionManager):
         if (self.__is_commit_instruction(instruction)):
             self.__handle_after_commit(instruction)
 
+    def __pop_instructions_from_queue(self, transaction_id: str):
+        # REMOVE ALL INSTRUCTIONS OF TRANSACTION_ID FROM WAIT QUEUE AND RETURN IT
+        instructions = []
+        for instruction in self.__wait_queue:
+            if (instruction.get_transaction_id() == transaction_id):
+                instructions.append(instruction)
+        
+        for instruction in instructions:
+            self.__wait_queue.remove(instruction)
+
+        return instructions
+
     def __abort(self, transaction_id: str):
         # ADD TRANSACTION TO ROLLBACK-QUEUE
         done_instructions = self.__done_instruction.pop(transaction_id, [])
+        waiting_instructions = self.__pop_instructions_from_queue(transaction_id)
+        done_instructions.extend(waiting_instructions)
         self._console_log("Transaction", transaction_id, "is aborting")
         self.__resource_handler.rollback(transaction_id)
         self.__lock_manager.unlock_all(transaction_id)
