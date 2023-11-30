@@ -16,6 +16,7 @@ class ResourceVersion:
         self.__read_timestamp = read_timestamp
         self.__write_timestamp = write_timestamp
         self.__value = initial_value
+        self.__is_committed = False
 
     def get_resource_id(self) -> str:
         return self.__resource_id
@@ -44,12 +45,29 @@ class ResourceVersion:
         self.__value = value
 
         return old_value
+    
+    def commit(self):
+        self.__is_committed = True
+
+    def is_committed(self) -> bool:
+        return self.__is_committed
 
 class VersionController:
     def __init__(self) -> None:
+        # two data structure keeping the same data for read efficiency
+
+        # 1. Map resource id to list of resource versions related to that resource id 
         self.__resource_versions: dict[str, list[ResourceVersion]] = {}
+        # 2. Map transaction id to list of resource versions created to that transaction
         self.__transaction_versions: dict[str, list[ResourceVersion]] = {}
+
+        # two data structure keeping the same data for read efficiency
+
+        # 1. Map transaction id to list of another transaction ids that read version created by the first
         self.__version_readers: dict[str, list[str]] = {}
+        # 2. Map transaction id to list of another transaction ids that create the version read by the first
+        self.__version_reading: dict[str, list[str]] = {}
+
         self.__log_writter = LogWriter("VERSION CONTROLLER")
 
     def __add_reader(self, creator_transaction_id: str, reader_transaction_id: str):
@@ -60,6 +78,15 @@ class VersionController:
             self.__version_readers[creator_transaction_id] = readers
 
         readers.append(reader_transaction_id)
+
+        # write redundancy for read efficiency
+        readings = self.__version_reading.get(reader_transaction_id)
+
+        if (readings is None):
+            readings = []
+            self.__version_reading[reader_transaction_id] = readings
+
+        readings.append(creator_transaction_id)
 
     def __get_readers(self, creator_transaction_id: str) -> list[str]:
         return self.__version_readers.get(creator_transaction_id, [])
@@ -97,7 +124,13 @@ class VersionController:
         # Return value of suitable version and update its read-timestamp
         version = self.__get_less_or_equal_largest_version(resource_id, transaction_timestamp)
 
-        self.__add_reader(version.get_transaction_id(), transaction_id)
+        creator_transaction_id = version.get_transaction_id()
+
+        # Record reading version history for cascading rollback purpose
+        # Only added for version that is not committed yet and not created by the same transaction
+        if (creator_transaction_id != transaction_id and not version.is_committed()):
+            self.__add_reader(version.get_transaction_id(), transaction_id)
+
         value = version.read(transaction_timestamp)
 
         self.__log_writter.console_log(
@@ -127,6 +160,7 @@ class VersionController:
 
         versions.insert(insert_point, version)
         
+        # write redundancy for read effiency
         transaction_versions = self.__get_or_create_transaction_versions_if_not_exist(transaction_id)
         transaction_versions.append(version)
 
@@ -190,6 +224,23 @@ class VersionController:
             self.__resource_versions[version.get_resource_id()].remove(version)
 
         return self.__version_readers.pop(transaction_id, [])
+    
+    def commit(self, transaction_id: str):
+        # Remove committed transaction from reading list so it can't be rolled-back when version creator initiate cascading rollback
+        readings = self.__version_reading.pop(transaction_id, [])
+
+        for reading in readings:
+            self.__version_readers[reading].remove(transaction_id)
+
+        # Remove readers history that read versions created by committed transaction since committed transaction will never be rolled-back
+        self.__version_readers.pop(transaction_id, [])
+
+        # Commit version created by the transaction
+        for version in self.__transaction_versions.get(transaction_id, []):
+            version.commit()
+
+        
+
 
 
         

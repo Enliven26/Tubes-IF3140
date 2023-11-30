@@ -12,11 +12,7 @@ class TwoPhaseTransactionManager(TransactionManager):
 
     # CORRECT ASSUMPTION:
 
-    # 1. It's IMPOSSIBLE that instructions from the same transaction can be in both wait-queue and rollback-queue. instructions in rollback queue will be executed right after 1 instruction that trigger the abort and if that rollback instructions can't be executed, it will be put in wait-queue
-
-    # 2. Because of point number 1, it's impossible that instructions in wait-queue of certain transaction is out of order.
-
-    # 3. 
+    # 1. MVTO doesn't ensure recoverability and cascadelessness
 
     def __init__(self, file_path: str) -> None:
 
