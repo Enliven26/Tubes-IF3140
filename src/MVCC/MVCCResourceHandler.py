@@ -1,19 +1,16 @@
 from cores.ResourceManager import ResourceManager
 from cores.LogWritter import LogWriter
+from MVCC.VersionController import VersionController
 
-class TwoPhaseResourceHandler:
+class MVCCResourceHandler:
     def __init__(self) -> None:
-        self.__resource_manager: ResourceManager = ResourceManager()
+        self.__version_controller: VersionController = VersionController()
         self.__log_writer = LogWriter("RESOURCE MANAGER")
 
-        # History format for certain transaction id: 
-        # dictionary with key: resource id and value: tuple of old value, new value
-        self.__update_history: dict[str, dict[str, list[tuple[int, int]]]] = {}
-
-    def read(self, resource_id: str) -> int:
+    def read(self, resource_id: str, transaction_timestamp: float) -> int:
         # READ THE VALUE OF CERTAIN RESOURCE
         # RETURN 0 IF RESOURCE IS NEW
-        return self.__resource_manager.read(resource_id)
+        return self.__version_controller.read(resource_id, transaction_timestamp)
     
     def write(self, transaction_id: str, resource_id: str, value: int) -> int:
         # UPDATE THE VALUE OF CERTAIN RESOURCE AND RETURN THE OLD VALUE

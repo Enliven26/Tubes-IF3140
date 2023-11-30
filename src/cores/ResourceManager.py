@@ -10,12 +10,12 @@ class ResourceManager:
         # USE THIS FOR PRINTING FROM RESOURCE MANAGER PERSPECTIVE
         self.__log_writer.console_log(*args)
 
-    def is_resource_exist(self, id: str) -> bool:
+    def __is_resource_exist(self, id: str) -> bool:
         return self.__resources.get(id) is not None
     
     def __create_resource_if_not_exist(self, id: str, value: int = 0):
         # RESOURCE HAS VALUE 0 BY DEFAULT
-        if not self.is_resource_exist(id):
+        if not self.__is_resource_exist(id):
             self.__resources[id] = Resource(id, value)
 
     def read(self, id: str) -> int:

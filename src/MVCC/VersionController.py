@@ -1,0 +1,195 @@
+from cores.LogWritter import LogWriter
+from MVCC.exceptions import ForbiddenTimestampWriteException
+
+class ResourceVersion:
+    def __init__(
+            self, 
+            resource_id: str, 
+            transaction_id: str = "",
+            read_timestamp: float = 0, 
+            write_timestamp: float = 0, 
+            initial_value: int = 0
+        ) -> None:
+
+        self.__resource_id = resource_id
+        self.__transaction_id = transaction_id
+        self.__read_timestamp = read_timestamp
+        self.__write_timestamp = write_timestamp
+        self.__value = initial_value
+
+    def get_resource_id(self) -> str:
+        return self.__resource_id
+    
+    def get_transaction_id(self) -> str:
+        return self.__transaction_id
+    
+    def get_read_timestamp(self) -> float:
+        return self.__read_timestamp
+    
+    def get_write_timestamp(self) -> float:
+        return self.__write_timestamp
+    
+    def __update_read_timestamp(self, new_timestamp: float):
+        self.__read_timestamp = max(self.__read_timestamp, new_timestamp)
+
+    def get_value(self) -> int:
+        return self.__value
+    
+    def read(self, transaction_timestamp: float) -> int:
+        self.__update_read_timestamp(transaction_timestamp)
+        return self.__value
+    
+    def update(self, value: int) -> int:
+        old_value = self.__value
+        self.__value = value
+
+        return old_value
+
+class VersionController:
+    def __init__(self) -> None:
+        self.__resource_versions: dict[str, list[ResourceVersion]] = {}
+        self.__transaction_versions: dict[str, list[ResourceVersion]] = {}
+        self.__version_readers: dict[str, list[str]] = {}
+        self.__log_writter = LogWriter("VERSION CONTROLLER")
+
+    def __add_reader(self, creator_transaction_id: str, reader_transaction_id: str):
+        readers = self.__version_readers.get(creator_transaction_id)
+
+        if (readers is None):
+            readers = []
+            self.__version_readers[creator_transaction_id] = readers
+
+        readers.append(reader_transaction_id)
+
+    def __get_readers(self, creator_transaction_id: str) -> list[str]:
+        return self.__version_readers.get(creator_transaction_id, [])
+
+    def __get_or_create_resource_versions_if_not_exist(self, resource_id: str) -> list[ResourceVersion]:
+        versions = self.__resource_versions.get(resource_id)
+
+        if (versions is None):
+            versions = [ResourceVersion(resource_id)]
+            self.__resource_versions[resource_id] = versions
+
+        return versions
+    
+    def __get_or_create_transaction_versions_if_not_exist(self, transaction_id: str) -> list[ResourceVersion]:
+        versions = self.__transaction_versions.get(transaction_id)
+
+        if (versions is None):
+            versions = []
+            self.__transaction_versions[transaction_id] = versions
+
+        return versions
+    
+    def __get_less_or_equal_largest_version(self, resource_id: str, transaction_timestamp: float):
+        # Return version of resource_id whose write timestamp is the largest write timestamp less than or equal to specified timestamp
+
+        versions: list[ResourceVersion] = self.__get_or_create_resource_versions_if_not_exist(resource_id)
+
+        for version in versions:
+            if (version.get_write_timestamp() <= transaction_timestamp):
+                return version
+            
+        raise Exception("Initial version not found")
+    
+    def read(self, resource_id: str, transaction_id: str, transaction_timestamp: float) -> int:
+        # Return value of suitable version and update its read-timestamp
+        version = self.__get_less_or_equal_largest_version(resource_id, transaction_timestamp)
+
+        self.__add_reader(version.get_transaction_id(), transaction_id)
+        value = version.read(transaction_timestamp)
+
+        self.__log_writter.console_log(
+            "Version of resource", 
+            resource_id, 
+            "with write-timestamp", 
+            version.get_write_timestamp(), 
+            "is read with value",
+            version.get_value()
+        )
+
+        return value
+    
+    def __insert_new_version(self, resource_id: str, transaction_id: str, transaction_timestamp: float, update_value: int):
+        # Create new version of resource
+        
+        version = ResourceVersion(resource_id, transaction_id, transaction_timestamp, transaction_timestamp, update_value)
+        versions = self.__get_or_create_resource_versions_if_not_exist(resource_id)
+
+        insert_point = 0
+
+        for i in range(len(versions)):
+            if (versions[i].get_write_timestamp() > transaction_timestamp):
+                break
+
+            insert_point = i
+
+        versions.insert(insert_point, version)
+        
+        transaction_versions = self.__get_or_create_transaction_versions_if_not_exist(transaction_id)
+        transaction_versions.append(version)
+
+    def write(self, resource_id: str, transaction_timestamp: float, update_value: int):
+        # WRITE VERSION AND RETURN OLD VALUE
+
+        version = self.__get_less_or_equal_largest_version(resource_id, transaction_timestamp)
+
+        if (version.get_read_timestamp() > transaction_timestamp):
+            raise ForbiddenTimestampWriteException()
+
+        if (version.get_write_timestamp() == transaction_timestamp):
+            old_value = version.update(update_value)
+            self.__log_writter(
+                "Version of resource", 
+                resource_id, 
+                "with write-timestamp", 
+                transaction_timestamp, 
+                "is updated from",
+                old_value,
+                "to",
+                update_value
+            )
+
+        else:
+            self.__insert_new_version(resource_id, transaction_timestamp, update_value)
+            self.__log_writter("New version of resource", resource_id, "is created with timestamp", transaction_timestamp)
+
+    def get_cascading_rollback_transaction_ids(self, rollback_transaction_id: str) -> list[str]:
+        # RETURN CASCADING READER OF EVERY VERSION BY CERTAIN TRANSACTION
+
+        memo: dict[str, bool] = {}
+        cascading_ids = []
+        new_ids = [rollback_transaction_id]
+
+        while True:
+
+            if (len(new_ids) == 0):
+                break
+
+            current_new_ids = new_ids
+            new_ids = []
+
+            for id in current_new_ids:
+                cascading_ids.append(id)
+                memo[id] = True
+                reader_ids = self.__get_readers(id)
+
+                for new_reader_id in reader_ids:
+                    if (not memo.get(new_reader_id)):
+                        new_ids.append(new_reader_id)
+
+        return cascading_ids
+
+    def rollback(self, transaction_id: str) -> list[str]:
+        # REMOVE ALL VERSIONS AND DATA BY THE TRANSACTION AND RETURN READERS OF VERSION CREATED BY THAT TRANSACTION
+
+        transaction_versions = self.__transaction_versions.pop(transaction_id, [])
+
+        for version in transaction_versions:
+            self.__resource_versions[version.get_resource_id()].remove(version)
+
+        return self.__version_readers.pop(transaction_id, [])
+
+
+        

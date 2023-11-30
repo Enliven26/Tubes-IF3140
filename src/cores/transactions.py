@@ -1,4 +1,5 @@
 from enum import Enum
+import time
 
 class TransactionStatus(Enum):
     GOING = 0
@@ -34,3 +35,16 @@ class Transaction:
     
     def commit(self):
         self.__status = TransactionStatus.COMMITTED
+
+class StaticTimestampTransaction(Transaction):
+    def __init__(self, id: str) -> None:
+        super().__init__(id)
+        self.__timestamp = time.time()
+
+        # solve bug when timestamp for 2 transaction is equal
+        time.sleep(1e-7)
+
+    def get_timestamp(self):
+        return self.__timestamp
+    
+
