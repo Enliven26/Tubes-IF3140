@@ -1,11 +1,9 @@
 from cores.TransactionManager import TransactionManager
-from twophase.TwoPhaseInstructionReader import TwoPhaseInstructionReader
+from MVCC.MVCCInstructionReader import MVCCInstructionReader
 from cores.Instruction import Instruction, InstructionType
-from twophase.LockManager import LockManager
-from twophase.TwoPhaseResourceHandler import TwoPhaseResourceHandler
+from MVCC.VersionController import VersionController
 from collections import deque
-from cores.transactions import StaticTimestampTransaction
-from twophase.exceptions import LockSharingException
+from cores.transactions import DynamicTimestampTransaction
 
 
 class TwoPhaseTransactionManager(TransactionManager):
@@ -16,13 +14,12 @@ class TwoPhaseTransactionManager(TransactionManager):
 
     def __init__(self, file_path: str) -> None:
 
-        self.__lock_manager = LockManager()
-        self.__resource_handler = TwoPhaseResourceHandler()
-        instruction_reader = TwoPhaseInstructionReader(file_path, self.__lock_manager, self.__resource_handler)
+        self.__version_controller = VersionController()
+        instruction_reader = MVCCInstructionReader(file_path, self.__lock_manager, self.__resource_handler)
 
         super().__init__(instruction_reader)
 
-        self.__transactions: dict[str, StaticTimestampTransaction] = {}
+        self.__transactions: dict[str, DynamicTimestampTransaction] = {}
         self.__wait_queue: deque[Instruction] = deque()
         self.__rollback_queue: deque[list[Instruction]] = deque()
         self.__done_instruction: dict[str, list[Instruction]] = {}

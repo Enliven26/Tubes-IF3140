@@ -30,8 +30,9 @@ class Instruction(ABC):
         pass
 
     @abstractmethod
-    def execute(self):
+    def execute(self, **kwargs):
         # THIS METHOD IS THE EXECUTION OF THE INSTRUCTION
+        # Use kwargs if the data is impossible to be passed from init
         pass
 
 

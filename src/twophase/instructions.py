@@ -49,7 +49,7 @@ class WriteInstructionWithLock(AccessInstructionWithLock):
     def __str__(self) -> str:
         return f"W({self._get_resource_id()}={self.__update_value}) from transaction {self.get_transaction_id()}"
 
-    def execute(self):
+    def execute(self, **kwargs):
         # ACQUIRE OR UPGRADE TO EXCLUSIVE LOCK AND UPDATE THE RESOURCE
         lock_manager = self._get_lock_manager()
         transaction_id = self.get_transaction_id()
@@ -81,7 +81,7 @@ class ReadInstructionWithLock(AccessInstructionWithLock):
     def __str__(self) -> str:
         return f"R({self._get_resource_id()}) from transaction {self.get_transaction_id()}"
 
-    def execute(self):
+    def execute(self, **kwargs):
         # GET SHARE LOCK IF ANY LOCK IS NOT HOLD AND READ THE RESOURCE
         lock_manager = self._get_lock_manager()
         transaction_id = self.get_transaction_id()
@@ -110,7 +110,7 @@ class CommitInstructionWithLock(InstructionWithLock):
     def __str__(self) -> str:
         return f"commit from transaction {self.get_transaction_id()}"
     
-    def execute(self):
+    def execute(self, **kwargs):
         # UNLOCK ALL LOCKS 
         lock_manager = self._get_lock_manager()
         transaction_id = self.get_transaction_id()
