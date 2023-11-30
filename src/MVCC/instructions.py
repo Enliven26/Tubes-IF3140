@@ -91,15 +91,14 @@ class MVCCReadInstruction(MVCCAccessInstruction):
         self._console_log("Transaction", transaction_id, "is reading on resource", resource_id)
         version_controller.read(resource_id, transaction_id, transaction_timestamp)
 
-class MVCCCommitInstruction(MVCCAccessInstruction):
+class MVCCCommitInstruction(MVCCInstruction):
     def __init__(
             self, 
             transaction_id: str,
             version_controller: VersionController, 
         ) -> None:
 
-        super().__init__(transaction_id)
-        self.__version_controller = version_controller
+        super().__init__(transaction_id, version_controller)
 
     def get_transaction_type(self) -> InstructionType:
         return InstructionType.C
@@ -109,5 +108,5 @@ class MVCCCommitInstruction(MVCCAccessInstruction):
     
     def execute(self, **kwargs):
         transaction_id = self.get_transaction_id()
-        self.__version_controller.commit(transaction_id)
+        self._get_version_controller().commit(transaction_id)
         self._console_log("Transaction", transaction_id, "committed")

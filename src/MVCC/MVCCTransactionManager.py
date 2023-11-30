@@ -29,7 +29,6 @@ class TwoPhaseTransactionManager(TransactionManager):
         self.__transactions: dict[str, TransactionInfo] = {}
         self.__rollback_queue: deque[list[Instruction]] = deque()
         self.__done_instruction: dict[str, list[Instruction]] = {}
-        self.__has_transaction_committed: bool = False
     
     def __add_to_done_list(self, instruction: Instruction) -> bool:
         # ADD INSTRUCTION TO DONE LIST FOR ROLLBACK PURPOSE
@@ -53,7 +52,8 @@ class TwoPhaseTransactionManager(TransactionManager):
         self.__done_instruction.pop(transaction_id)
 
     def __execute_instruction(self, instruction: Instruction):
-        instruction.execute()
+        transaction_id = instruction.get_transaction_id()
+        instruction.execute(transaction_container=self.__transactions[transaction_id].transaction_container)
         self.__add_to_done_list(instruction)
 
         if (self.__is_commit_instruction(instruction)):
@@ -63,7 +63,6 @@ class TwoPhaseTransactionManager(TransactionManager):
         # ADD TRANSACTION TO ROLLBACK-QUEUE
         done_instructions = self.__done_instruction.pop(transaction_id, [])
         self._console_log("Transaction", transaction_id, "is aborting")
-        self.__version_controller.rollback(transaction_id)
         self.__rollback_queue.append(done_instructions)
         self.__transactions[transaction_id].transaction.roll_back()
 
@@ -90,18 +89,27 @@ class TwoPhaseTransactionManager(TransactionManager):
 
     def __process_single_instruction(
             self, 
-            instruction: Instruction, 
-            process_post_rollback: bool = False, 
-            process_post_commit: bool = False
+            instruction: Instruction,
+            handle_rollback: bool = False
         ):
-        # EXECUTE INSTRUCTION AND HANDLE WAITING AND ROLLING BACK INSTRUCTION AFTER EXECUTION
-        instruction_id = instruction.get_transaction_id()
-
+        # EXECUTE INSTRUCTION AND HANDLE ROLLBACK IF FAIL
         try:
             self.__execute_instruction(instruction)
 
         except ForbiddenTimestampWriteException as e:
-            transaction_ids = e.get_cascading_rollback_transaction_ids()
+
+            if (not handle_rollback):
+                raise e
+            
+            transaction_id = instruction.get_transaction_id()
+            self._console_log(
+                "[ Transaction", 
+                transaction_id, 
+                f"failed executing {instruction},", 
+                "starting cascading rollback ]"
+            )
+
+            transaction_ids = self.__version_controller.__rollback(transaction_id)
             self.__abort_all(transaction_ids)
             self.__process_rollback()
 
@@ -111,17 +119,31 @@ class TwoPhaseTransactionManager(TransactionManager):
         if (self.__transactions.get(transaction_id) == None):
             self.__transactions[transaction_id] = DynamicTimestampTransaction(transaction_id)
             
-        self.__process_single_instruction(
-            instruction, 
-            process_post_rollback=True,
-            process_post_commit=True
-        )
+        self.__process_single_instruction(instruction, handle_rollback=True)
 
     def _get_next_remaining_instruction(self) -> Instruction | None:
         return None
     
     def _is_finish_or_stop(self) -> bool:
         return True
+    
+    def __print_transaction_status(self, transaction: DynamicTimestampTransaction):
+
+        status_str = ""
+
+        if (transaction.is_committed()):
+            status_str = "finished"
+
+        else:
+            status_str = "still going"
+
+        self.__log_writer.console_log(
+            "(", 
+            f"Transaction ID: {transaction.get_id()}", 
+            f"Timestamp: {transaction.get_timestamp()}",
+            f"Status: {status_str}",
+            ")"
+        )
 
     def _print_all_transactions_status(self):
 
@@ -130,15 +152,6 @@ class TwoPhaseTransactionManager(TransactionManager):
         self._console_log("Transaction manager stopped with status:")
 
         for transaction_info in transactions:
-        
-            status_str = ""
-
-            if (transaction_info.transaction.is_committed()):
-                status_str = "finished"
-
-            else:
-                status_str = "still going"
-
-            self._console_log("Transaction", transaction_info.transaction.get_id(), "is", status_str)
+            self.__print_transaction_status(transaction_info.transaction)
 
         self.__version_controller.print_snapshot()

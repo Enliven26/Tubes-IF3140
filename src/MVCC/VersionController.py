@@ -66,7 +66,7 @@ class VersionController:
         # 1. Map transaction id to list of another transaction ids that read version created by the first
         self.__version_readers: dict[str, list[str]] = {}
         # 2. Map transaction id to list of another transaction ids that create the version read by the first
-        self.__version_reading: dict[str, list[str]] = {}
+        self.__version_readings: dict[str, list[str]] = {}
 
         self.__log_writer = LogWriter("VERSION CONTROLLER")
 
@@ -80,11 +80,11 @@ class VersionController:
         readers.append(reader_transaction_id)
 
         # write redundancy for read efficiency
-        readings = self.__version_reading.get(reader_transaction_id)
+        readings = self.__version_readings.get(reader_transaction_id)
 
         if (readings is None):
             readings = []
-            self.__version_reading[reader_transaction_id] = readings
+            self.__version_readings[reader_transaction_id] = readings
 
         readings.append(creator_transaction_id)
 
@@ -129,7 +129,7 @@ class VersionController:
         # Record reading version history for cascading rollback purpose
         # Only added for version that is not committed yet and not created by the same transaction
         if (creator_transaction_id != transaction_id and not version.is_committed()):
-            self.__add_reader(version.get_transaction_id(), transaction_id)
+            self.__add_reader(creator_transaction_id, transaction_id)
 
         value = version.read(transaction_timestamp)
 
@@ -189,7 +189,7 @@ class VersionController:
             self.__insert_new_version(resource_id, transaction_timestamp, update_value)
             self.__log_writer("New version of resource", resource_id, "is created with timestamp", transaction_timestamp)
 
-    def get_cascading_rollback_transaction_ids(self, rollback_transaction_id: str) -> list[str]:
+    def __get_cascading_rollback_transaction_ids(self, rollback_transaction_id: str) -> list[str]:
         # RETURN CASCADING READER OF EVERY VERSION BY CERTAIN TRANSACTION
 
         memo: dict[str, bool] = {}
@@ -215,19 +215,38 @@ class VersionController:
 
         return cascading_ids
 
-    def rollback(self, transaction_id: str) -> list[str]:
-        # REMOVE ALL VERSIONS AND DATA BY THE TRANSACTION AND RETURN READERS OF VERSION CREATED BY THAT TRANSACTION
+    def __rollback(self, transaction_id: str) -> list[str]:
+        # REMOVE ALL VERSIONS AND DATA BY THE TRANSACTION 
 
+        # removing versions created by this transaction
         transaction_versions = self.__transaction_versions.pop(transaction_id, [])
 
         for version in transaction_versions:
             self.__resource_versions[version.get_resource_id()].remove(version)
 
+        # removing reding data of this transaction 
+        readings = self.__version_readings.pop(transaction_id, []) 
+        # also removing this transaction from being reader of other versions
+        for reading in readings:
+            self.__version_readers[reading].remove(transaction_id)
+
+        # Only pop the reader list and not the reading counterpart because it will also be removed in the cascading process
         return self.__version_readers.pop(transaction_id, [])
+    
+    def cascade_rollback(self, transaction_id: str) -> list[str]:
+        # REMOVE ALL VERSIONS AND DATA OF TRANSACTION THAT IS INVOLVED IN CASCADING ROLLBACK
+        # RETURN ALL TRANSACTIONS IN THAT CASCADING ROLLBACK
+
+        cascading_ids = self.__get_cascading_rollback_transaction_ids(transaction_id)
+
+        for cascading_id in cascading_ids:
+            self.__rollback(cascading_id)
+
+        return cascading_ids
     
     def commit(self, transaction_id: str):
         # Remove committed transaction from reading list so it can't be rolled-back when version creator initiate cascading rollback
-        readings = self.__version_reading.pop(transaction_id, [])
+        readings = self.__version_readings.pop(transaction_id, [])
 
         for reading in readings:
             self.__version_readers[reading].remove(transaction_id)
