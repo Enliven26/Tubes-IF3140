@@ -83,11 +83,19 @@ class InstructionReader(ABC):
     def _read_line(self) -> InstructionLine:
         # READ 1 LINE OF INPUT FILE
 
-        line = self.__file.readline()
+        line = ""
 
-        if not line:
-            # End-of-file reached
-            raise EOFError("End of file reached")
+        while True: 
+            line = self.__file.readline()
+
+            if not line:
+                # End-of-file reached
+                raise EOFError("End of file reached")
+            
+            line = line.strip()
+
+            if (not line.startswith("#") and len(line)):
+                break
 
         return self.__parse_line(line)
     

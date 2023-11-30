@@ -1,7 +1,7 @@
-R 1 A
-R 3 A
-W 2 A=3
-R 2 A
-C 1
-C 2
-C 3
+# 2PL Case:
+# Involve wait-queue
+
+R T1 X
+W T2 X=5
+C T1
+C T2

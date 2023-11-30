@@ -1,0 +1,15 @@
+# 2PL Case:
+# Involve wait-queue and rollback
+# Rolling back when there are instructions in wait-queue for the same transaction
+# Fail when rolling back will make all rollback instructions enter wait-queue
+
+R T1 X
+R T2 X
+R T3 Y
+R T1 Y
+W T2 X=2
+C T2
+R T3 Z
+W T1 Y=1
+C T1
+C T3

@@ -57,3 +57,8 @@ C [TRANSACTION ID]
 cd src
 python main.py
 ```
+
+Note:  
+1. File name is the file with location relative to the src/input folder.
+2. Extension in file name input is not required and all extension other than .txt will be overridden.  
+3. Program will output transaction processes in the console.  

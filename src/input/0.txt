@@ -1,8 +1,12 @@
-R 1 A
-R 2 A
-W 3 A=4
-W 1 A=3
-R 1 A
-C 2
-C 1
-C 3
+# 2PL Case:
+# Simple schedule without waiting and rollback
+
+R T1 X
+R T2 X
+R T1 Y
+W T1 Y=5
+C T1
+W T3 Z=6
+R T2 Y
+C T3
+C T2
