@@ -1,5 +1,5 @@
 from cores.ResourceManager import ResourceManager
-from cores.LogWritter import LogWriter
+from cores.LogWriter import LogWriter
 
 class TwoPhaseResourceHandler:
     def __init__(self) -> None:

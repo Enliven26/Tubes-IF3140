@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from cores.LogWritter import LogWriter
+from cores.LogWriter import LogWriter
 
 class InstructionType(Enum):
     R = "READ"

@@ -1,7 +1,7 @@
 
 from twophase.locks import Lock, LockType
 from twophase.exceptions import LockNotFoundException, LockAlreadyExistException, LockUpgradeException, LockSharingException
-from cores.LogWritter import LogWriter
+from cores.LogWriter import LogWriter
 
 class LockManager:
 

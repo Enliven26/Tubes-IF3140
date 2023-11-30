@@ -1,5 +1,5 @@
 from cores.Resource import Resource
-from cores.LogWritter import LogWriter
+from cores.LogWriter import LogWriter
 
 class ResourceManager:
     def __init__(self) -> None:

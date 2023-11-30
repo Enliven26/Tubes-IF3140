@@ -50,6 +50,10 @@ class StaticTimestampTransaction(Transaction):
 class DynamicTimestampTransaction(Transaction):
     def __init__(self, id: str) -> None:
         super().__init__(id)
+        self.__timestamp = 0
+        self.__reset_timestamp()
+
+    def __reset_timestamp(self):
         self.__timestamp = time.time()
 
         # solve bug when timestamp for 2 transaction is equal
@@ -58,7 +62,10 @@ class DynamicTimestampTransaction(Transaction):
     def get_timestamp(self):
         return self.__timestamp
     
-    def set_timestamp(self, new_timestamp: float):
-        self.__timestamp = new_timestamp
+    def reset_timestamp(self):
+        self.__reset_timestamp()
     
+    def roll_back(self):
+        super().roll_back()
+        self.__reset_timestamp()
 

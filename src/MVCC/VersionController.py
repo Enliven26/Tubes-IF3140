@@ -1,4 +1,4 @@
-from cores.LogWritter import LogWriter
+from cores.LogWriter import LogWriter
 from MVCC.exceptions import ForbiddenTimestampWriteException
 
 class ResourceVersion:
@@ -68,7 +68,7 @@ class VersionController:
         # 2. Map transaction id to list of another transaction ids that create the version read by the first
         self.__version_reading: dict[str, list[str]] = {}
 
-        self.__log_writter = LogWriter("VERSION CONTROLLER")
+        self.__log_writer = LogWriter("VERSION CONTROLLER")
 
     def __add_reader(self, creator_transaction_id: str, reader_transaction_id: str):
         readers = self.__version_readers.get(creator_transaction_id)
@@ -133,7 +133,7 @@ class VersionController:
 
         value = version.read(transaction_timestamp)
 
-        self.__log_writter.console_log(
+        self.__log_writer.console_log(
             "Version of resource", 
             resource_id, 
             "with write-timestamp", 
@@ -174,7 +174,7 @@ class VersionController:
 
         if (version.get_write_timestamp() == transaction_timestamp):
             old_value = version.update(update_value)
-            self.__log_writter(
+            self.__log_writer(
                 "Version of resource", 
                 resource_id, 
                 "with write-timestamp", 
@@ -187,7 +187,7 @@ class VersionController:
 
         else:
             self.__insert_new_version(resource_id, transaction_timestamp, update_value)
-            self.__log_writter("New version of resource", resource_id, "is created with timestamp", transaction_timestamp)
+            self.__log_writer("New version of resource", resource_id, "is created with timestamp", transaction_timestamp)
 
     def get_cascading_rollback_transaction_ids(self, rollback_transaction_id: str) -> list[str]:
         # RETURN CASCADING READER OF EVERY VERSION BY CERTAIN TRANSACTION
@@ -238,6 +238,27 @@ class VersionController:
         # Commit version created by the transaction
         for version in self.__transaction_versions.get(transaction_id, []):
             version.commit()
+
+    def __print_version(self, version: ResourceVersion):
+        self.__log_writer.console_log(
+            "(", 
+            f"Write-Timestamp: {version.get_write_timestamp()}", 
+            f"Read-Timestamp: {version.get_read_timestamp()}",
+            f"Content-Value: {version.get_value()}",
+            ")"
+        )
+
+    def print_snapshot(self):
+        # PRINT ALL RESOURCE VERSIONS
+        self.__log_writer.console_log("[ Resource snapshot ]")
+        for resource_id, versions in self.__resource_versions.items():
+            self.__log_writer.console_log("Versions of resource", resource_id, ":")
+            
+            for version in versions:
+                self.__print_version(version)
+
+        if (not bool(self.__resource_versions)):
+            self.__log_writer.console_log("No resource data")
 
         
 

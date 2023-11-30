@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar
 from cores.InstructionReader import InstructionReader
 from cores.Instruction import Instruction
-from cores.LogWritter import LogWriter
+from cores.LogWriter import LogWriter
 
 Reader = TypeVar('Reader', bound=InstructionReader)
 
