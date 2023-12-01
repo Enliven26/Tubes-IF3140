@@ -1,17 +1,7 @@
 from cores.Instruction import Instruction
 from MVCC.VersionController import VersionController
 from cores.Instruction import InstructionType
-from MVCC.MVCCTransaction import MVCCTransaction
-
-class MVCCTransactionContainer:
-    def __init__(self, transaction: MVCCTransaction) -> None:
-        self.__transaction = transaction
-
-    def get_id(self):
-        return self.__transaction.get_id()
-    
-    def get_timestamp(self):
-        return self.__transaction.get_timestamp()
+from MVCC.MVCCTransaction import MVCCTransactionContainer
     
 class MVCCInstruction(Instruction):
     def __init__(self, transaction_id: str, version_controller: VersionController) -> None:

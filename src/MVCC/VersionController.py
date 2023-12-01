@@ -280,7 +280,7 @@ class VersionController:
         # PRINT ALL RESOURCE VERSIONS
         self.__log_writer.console_log("[ Resource snapshot ]")
         for resource_id, versions in self.__resource_versions.items():
-            self.__log_writer.console_log("Versions of resource", resource_id, ":")
+            self.__log_writer.console_log(f"Versions of resource {resource_id}:")
             
             for version in versions:
                 self.__print_version(version)

@@ -3,8 +3,7 @@ from MVCC.MVCCInstructionReader import MVCCInstructionReader
 from cores.Instruction import Instruction, InstructionType
 from MVCC.VersionController import VersionController
 from collections import deque
-from MVCC.MVCCTransaction import MVCCTransaction
-from MVCC.instructions import MVCCTransactionContainer
+from MVCC.MVCCTransaction import MVCCTransaction, MVCCTransactionContainer
 from MVCC.exceptions import ForbiddenTimestampWriteException
 
 class TransactionInfo:

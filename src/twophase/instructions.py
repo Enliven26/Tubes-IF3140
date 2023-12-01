@@ -9,7 +9,7 @@ class InstructionWithLock(Instruction):
         super().__init__(transaction_id)
         self.__lock_manager = lock_manager
 
-    def _get_lock_manager(self):
+    def _get_lock_manager(self) -> LockManager:
         return self.__lock_manager
 
 class AccessInstructionWithLock(InstructionWithLock):

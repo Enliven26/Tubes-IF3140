@@ -41,3 +41,11 @@ class ResourceManager:
 
         if (not bool(self.__resources)):
             self.__log_writer.console_log("No resource data")
+
+    def get_snapshot(self) -> dict[str, int]:
+        snapshot: dict[str, int] = {}
+
+        for resource_id, resource in self.__resources.items():
+            snapshot[resource_id] = resource.get_value()
+
+        return snapshot
