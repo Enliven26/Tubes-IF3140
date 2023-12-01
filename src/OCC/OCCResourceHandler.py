@@ -115,13 +115,48 @@ class OCCResourceHandler:
 
         self.__log_writer.console_log(f"[ Validating transaction {transaction_id} before commit ]")
 
-        # TODO: CEK VALIDASI BERDASARKAN ALGORITMA OCC
-        # ATRIBUT YANG PERLU DIAKSES: 
-        # SELF.__TRANSACTION_CONTAINERS, ISINYA SEMUA TRANSACTION YG PERNAH DICATAT
-        # SELF.__write_history dan self.read_history, baca apa isinya di __init__ atas dan guna datanya di ppt
+        current_transaction = self.__transaction_containers.get(transaction_id)
 
-        # LIHAT ATRIBUT YANG BISA DI AKSES DARI TRANSACTIONCONTAINER DI FILE OCCTRANSACTION
-        # EDGE CASE: TRANSACTION SAAT INI (SESUAI PARAMETER TRANSACTION_ID) GA KETEMU DI ATRIBUT CONTAINERS, ITU LANGSUNG RETURN TRUE AJA KARENA ARTINYA DIA GA PERNAH READ/WRITE
+        if current_transaction is None:
+            # If the current transaction is not found, it means it didn't read or write any resources.
+            # Return True without further validation.
+            return True
+
+        current_start_timestamp = current_transaction.get_start_timestamp()
+        current_finish_timestamp = current_transaction.get_finish_timestamp()
+        current_write_history = self.__write_history.get(transaction_id, [])
+
+        # Loop over other transactions for comparison
+        for other_transaction_id, other_transaction_container in self.__transaction_containers.items():
+            if other_transaction_id != transaction_id:
+                other_start_timestamp = other_transaction_container.get_start_timestamp()
+
+                # Check for conflicts based on finish and start timestamps
+                if (
+                    current_start_timestamp < other_start_timestamp
+                    and current_finish_timestamp is not None
+                    and current_finish_timestamp > other_start_timestamp
+                ):
+                    # Handle the case where validation fails
+                    raise ForbiddenOptimisticCommit(
+                        f"Conflict detected between transactions {transaction_id} and {other_transaction_id}"
+                    )
+
+                # Check for conflicts based on read and write history
+                for resource_id in current_write_history:
+                    if resource_id in self.__write_history.get(other_transaction_id, []):
+                        if (
+                            current_finish_timestamp is not None
+                            and other_start_timestamp < current_finish_timestamp < other_transaction_container.get_validation_timestamp()
+                            and resource_id in self.__read_history.get(other_transaction_id, [])
+                        ):
+                            # Handle the case where validation fails
+                            raise ForbiddenOptimisticCommit(
+                                f"Conflict detected for resource {resource_id} between transactions "
+                                f"{transaction_id} and {other_transaction_id}"
+                            )
+
+        # If the loop completes without raising an exception, validation succeeds
         return True
 
     def commit(self, transaction_id: str):
@@ -135,7 +170,3 @@ class OCCResourceHandler:
     def print_snapshot(self):
         # PRINT ALL RESOURCE VALUE AT THIS MOMENT
         self.__resource_manager.print_snapshot()
-        
-    
-
-
