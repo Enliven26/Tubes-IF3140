@@ -1,7 +1,7 @@
 from cores.ResourceManager import ResourceManager
 from cores.LogWriter import LogWriter
 from OCC.OCCTransaction import OCCTransactionContainer
-from OCC.exceptions import ForbiddenOptimisticCommit
+from OCC.exceptions import FailedOCCValidation
 class OCCResourceHandler:
     def __init__(self) -> None:
         self.__resource_manager: ResourceManager = ResourceManager()
@@ -127,7 +127,7 @@ class OCCResourceHandler:
     def commit(self, transaction_id: str):
 
         if (not self.__validate(transaction_id)):
-            raise ForbiddenOptimisticCommit()
+            raise FailedOCCValidation()
         
         self.__write_commit(transaction_id)
         self.__clear_data(transaction_id)

@@ -1,27 +1,22 @@
 from cores.TransactionManager import TransactionManager
-from MVCC.MVCCInstructionReader import MVCCInstructionReader
+from OCC.OCCInstructionReader import OCCInstructionReader
 from cores.Instruction import Instruction, InstructionType
-from MVCC.VersionController import VersionController
+from OCC.OCCResourceHandler import OCCResourceHandler
 from collections import deque
-from MVCC.MVCCTransaction import MVCCTransaction, MVCCTransactionContainer
-from MVCC.exceptions import ForbiddenTimestampWriteException
+from OCC.OCCTransaction import OCCTransaction, OCCTransactionContainer
+from OCC.exceptions import FailedOCCValidation
 
 class TransactionInfo:
-    def __init__(self, transaction: MVCCTransaction) -> None:
+    def __init__(self, transaction: OCCTransaction) -> None:
         self.transaction = transaction
-        self.transaction_container = MVCCTransactionContainer(transaction)
+        self.transaction_container = OCCTransactionContainer(transaction)
 
 class MVCCTransactionManager(TransactionManager):
 
-    # CORRECT ASSUMPTION:
-
-    # 1. MVTO doesn't ensure recoverability and cascadelessness
-    # 2. Starvation because of rollback is impossible since every instructions from rolled-back transaction will be prioritized and might commit (if last instruction of the rolled-back transaction is accepted) before new instructions are processed. (Note that it only starve if instructions of the transaction never end [infinite instructions].)
-
     def __init__(self, file_path: str) -> None:
 
-        self.__version_controller = VersionController()
-        instruction_reader = MVCCInstructionReader(file_path, self.__version_controller)
+        self.__resource_handler = OCCResourceHandler()
+        instruction_reader = OCCInstructionReader(file_path, self.__resource_handler)
 
         super().__init__(instruction_reader)
 
@@ -64,11 +59,6 @@ class MVCCTransactionManager(TransactionManager):
         self.__rollback_queue.append(done_instructions)
         self.__transactions[transaction_id].transaction.roll_back()
 
-    def __abort_all(self, transaction_ids: list[str]):
-        # ADD LIST OF TRANSACTION TO ROLLBACK-QUEUE
-        for transaction_id in transaction_ids:
-            self.__abort(transaction_id)
-
     def __dequeue_from_rollback(self):
         # ROLLBACK TRANSACTION THAT IS IN FRONT OF THE ROLLBACK-QUEUE
         instructions = self.__rollback_queue.popleft()
@@ -95,26 +85,24 @@ class MVCCTransactionManager(TransactionManager):
         try:
             self.__execute_instruction(instruction)
 
-
-        except ForbiddenTimestampWriteException as e:
+        except FailedOCCValidation as e:
 
             if (not handle_rollback):
                 raise e
             
             transaction_id = instruction.get_transaction_id()
             self._console_log(
-                f"[ Failed executing {instruction}, starting cascading rollback ]"
+                f"[ OCC Validation failed, starting rollback ]"
             )
             self.__add_to_done_list(instruction)
-            transaction_ids = self.__version_controller.cascade_rollback(transaction_id)
-            self.__abort_all(transaction_ids)
+            self.__abort(transaction_id)
             self.__process_rollback()
 
 
     def _process_instruction(self, instruction: Instruction):
         transaction_id = instruction.get_transaction_id()
         if (self.__transactions.get(transaction_id) == None):
-            transaction = MVCCTransaction(transaction_id)
+            transaction = OCCTransaction(transaction_id)
             self.__transactions[transaction_id] = TransactionInfo(transaction)
             
         self.__process_single_instruction(instruction, handle_rollback=True)
@@ -125,7 +113,7 @@ class MVCCTransactionManager(TransactionManager):
     def _is_finish_or_stop(self) -> bool:
         return True
     
-    def __print_transaction_status(self, transaction: MVCCTransaction):
+    def __print_transaction_status(self, transaction: OCCTransaction):
 
         status_str = ""
 
@@ -135,10 +123,15 @@ class MVCCTransactionManager(TransactionManager):
         else:
             status_str = "still going"
 
+        validation_timestamp = transaction.get_validation_timestamp()
+        finish_timestamp = transaction.get_finish_timestamp()
+
         self._console_log(
             "(", 
             f"Transaction ID: {transaction.get_id()},", 
-            f"Timestamp: {transaction.get_timestamp()},",
+            f"Start-Timestamp: {transaction.get_start_timestamp()},",
+            f"Validation-Timestamp: {'-' if validation_timestamp is None else validation_timestamp},",
+            f"Finish-Timestamp: {'-' if finish_timestamp is None else finish_timestamp},",
             f"Status: {status_str}",
             ")"
         )
@@ -152,4 +145,4 @@ class MVCCTransactionManager(TransactionManager):
         for transaction_info in transactions:
             self.__print_transaction_status(transaction_info.transaction)
 
-        self.__version_controller.print_snapshot()
+        self.__resource_handler.print_snapshot()

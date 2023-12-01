@@ -1,4 +1,4 @@
-class ForbiddenOptimisticCommit(Exception):
+class FailedOCCValidation(Exception):
     def __init__(self, 
-                 message="Resource to be written has read timestamp that is larger than transaction timestamp"):
+                 message="OCC Validation Failed"):
         super().__init__(message)

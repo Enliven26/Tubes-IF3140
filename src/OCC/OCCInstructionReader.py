@@ -4,7 +4,7 @@ from OCC.instructions import OCCReadInstruction, OCCWriteInstruction, OCCCommitI
 from cores.exceptions import InvalidInstructionLineException
 from OCC.OCCResourceHandler import OCCResourceHandler
 
-class MVCCInstructionReader(InstructionReader):
+class OCCInstructionReader(InstructionReader):
     def __init__(self, file_path: str, resource_handler: OCCResourceHandler) -> None:
         super().__init__(file_path)
         self.__resource_handler = resource_handler

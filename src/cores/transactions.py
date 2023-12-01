@@ -24,12 +24,6 @@ class Transaction:
     def roll_back(self):
         self.__status = TransactionStatus.ROLLINGBACK
     
-    def is_waiting(self) -> bool:
-        return self.__status == TransactionStatus.WAITING
-    
-    def wait(self):
-        self.__status = TransactionStatus.WAITING
-    
     def is_committed(self) -> bool:
         return self.__status == TransactionStatus.COMMITTED
     
@@ -56,7 +50,7 @@ class DynamicTimestampTransaction(Transaction):
     def _get_timestamp(self) -> float:
         return self.__timestamp
     
-    def roll_back(self):
-        super().roll_back()
+    def reset_status(self):
+        super().reset_status()
         self.__reset_timestamp()
 
