@@ -1,0 +1,9 @@
+# OCC Case:
+# Write-Write Conflict
+
+R T1 X
+W T1 X=1
+R T2 X
+W T2 X=2
+C T1
+C T2

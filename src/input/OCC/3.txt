@@ -1,0 +1,9 @@
+# OCC Case:
+# Phantom Read
+
+R T1 X
+W T1 X=1
+R T2 X
+C T1
+R T2 X
+C T2
