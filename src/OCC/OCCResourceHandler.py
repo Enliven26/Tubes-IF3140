@@ -95,12 +95,15 @@ class OCCResourceHandler:
         
         return old_value
     
-    def __clear_data(self, transaction_id: str):
+    def __clear_data(self, transaction_id: str, delete_write_history: bool = False):
         self.__read_history.pop(transaction_id, [])
         self.__snapshots.pop(transaction_id, [])
 
+        if (delete_write_history):
+            self.__write_history.pop(transaction_id, [])
+
     def rollback(self, transaction_id: str):
-        self.__clear_data(transaction_id)
+        self.__clear_data(transaction_id, delete_write_history=True)
 
     def __write_commit(self, transaction_id: str):
         snapshot = self.__get_or_create_snapshot(transaction_id)
