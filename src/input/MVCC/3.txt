@@ -1,0 +1,12 @@
+# MVCC Case:
+# Unrecoverable schedule
+
+W T1 X=999
+R T2 X
+R T2 Y
+R T3 X
+R T3 Y
+C T3
+W T1 Y=888
+C T2
+C T1

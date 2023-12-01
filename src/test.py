@@ -5,7 +5,7 @@ from MVCC.MVCCTransactionManager import MVCCTransactionManager
 
 def test():
 
-    file_name = "mvcc/2"
+    file_name = "mvcc/4"
     choice = 3
 
     transaction_manager: TransactionManager | None = None
