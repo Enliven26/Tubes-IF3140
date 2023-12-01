@@ -33,6 +33,9 @@ class Transaction:
     def _set_status(self, new_status: TransactionStatus):
         self.__status = new_status
 
+    def _get_status(self) -> TransactionStatus:
+        return self.__status
+
 class StaticTimestampTransaction(Transaction):
     def __init__(self, id: str) -> None:
         super().__init__(id)
