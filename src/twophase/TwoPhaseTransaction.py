@@ -9,7 +9,7 @@ class TwoPhaseTransaction(StaticTimestampTransaction):
         return self._get_timestamp()
 
     def is_waiting(self) -> bool:
-        return self.__status == TransactionStatus.WAITING
+        return self._set_status(TransactionStatus.WAITING)
     
     def wait(self):
-        self.__status = TransactionStatus.WAITING
+        self._set_status(TransactionStatus.WAITING)

@@ -30,6 +30,9 @@ class Transaction:
     def commit(self):
         self.__status = TransactionStatus.COMMITTED
 
+    def _set_status(self, new_status: TransactionStatus):
+        self.__status = new_status
+
 class StaticTimestampTransaction(Transaction):
     def __init__(self, id: str) -> None:
         super().__init__(id)
