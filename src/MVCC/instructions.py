@@ -63,7 +63,7 @@ class MVCCWriteInstruction(MVCCAccessInstruction):
 
         self._console_log("[ Transaction", transaction_id, "is writing on resource", resource_id, "]")
 
-        version_controller.write(resource_id, transaction_timestamp, self.__update_value)
+        version_controller.write(resource_id, transaction_id, transaction_timestamp, self.__update_value)
 
     
 class MVCCReadInstruction(MVCCAccessInstruction):
@@ -88,7 +88,7 @@ class MVCCReadInstruction(MVCCAccessInstruction):
         transaction_timestamp = self._get_transaction_container(**kwargs).get_timestamp()
         version_controller = self._get_version_controller()
 
-        self._console_log("Transaction", transaction_id, "is reading on resource", resource_id)
+        self._console_log("[ Transaction", transaction_id, "is reading on resource", resource_id, "]")
         version_controller.read(resource_id, transaction_id, transaction_timestamp)
 
 class MVCCCommitInstruction(MVCCInstruction):

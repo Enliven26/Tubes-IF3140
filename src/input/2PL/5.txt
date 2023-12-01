@@ -1,0 +1,12 @@
+# 2PL Case:
+# Involve wait-queue and rollback
+# Involve more than 1 transaction when rollback
+
+R T1 X
+R T2 X
+R T3 X
+W T3 X=33
+W T1 X=5
+C T1
+C T2
+C T3

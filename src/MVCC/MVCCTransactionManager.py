@@ -12,7 +12,7 @@ class TransactionInfo:
         self.transaction = transaction
         self.transaction_container = MVCCTransactionContainer(transaction)
 
-class TwoPhaseTransactionManager(TransactionManager):
+class MVCCTransactionManager(TransactionManager):
 
     # CORRECT ASSUMPTION:
 
@@ -93,31 +93,35 @@ class TwoPhaseTransactionManager(TransactionManager):
             handle_rollback: bool = False
         ):
         # EXECUTE INSTRUCTION AND HANDLE ROLLBACK IF FAIL
-        try:
-            self.__execute_instruction(instruction)
 
-        except ForbiddenTimestampWriteException as e:
+        while True:
+            try:
+                self.__execute_instruction(instruction)
+                break
 
-            if (not handle_rollback):
-                raise e
-            
-            transaction_id = instruction.get_transaction_id()
-            self._console_log(
-                "[ Transaction", 
-                transaction_id, 
-                f"failed executing {instruction},", 
-                "starting cascading rollback ]"
-            )
+            except ForbiddenTimestampWriteException as e:
 
-            transaction_ids = self.__version_controller.__rollback(transaction_id)
-            self.__abort_all(transaction_ids)
-            self.__process_rollback()
+                if (not handle_rollback):
+                    raise e
+                
+                transaction_id = instruction.get_transaction_id()
+                self._console_log(
+                    "[ Transaction", 
+                    transaction_id, 
+                    f"failed executing {instruction},", 
+                    "starting cascading rollback ]"
+                )
+
+                transaction_ids = self.__version_controller.cascade_rollback(transaction_id)
+                self.__abort_all(transaction_ids)
+                self.__process_rollback()
 
 
     def _process_instruction(self, instruction: Instruction):
         transaction_id = instruction.get_transaction_id()
         if (self.__transactions.get(transaction_id) == None):
-            self.__transactions[transaction_id] = DynamicTimestampTransaction(transaction_id)
+            transaction = DynamicTimestampTransaction(transaction_id)
+            self.__transactions[transaction_id] = TransactionInfo(transaction)
             
         self.__process_single_instruction(instruction, handle_rollback=True)
 
@@ -137,10 +141,10 @@ class TwoPhaseTransactionManager(TransactionManager):
         else:
             status_str = "still going"
 
-        self.__log_writer.console_log(
+        self._console_log(
             "(", 
-            f"Transaction ID: {transaction.get_id()}", 
-            f"Timestamp: {transaction.get_timestamp()}",
+            f"Transaction ID: {transaction.get_id()},", 
+            f"Timestamp: {transaction.get_timestamp()},",
             f"Status: {status_str}",
             ")"
         )

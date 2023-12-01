@@ -164,7 +164,7 @@ class VersionController:
         transaction_versions = self.__get_or_create_transaction_versions_if_not_exist(transaction_id)
         transaction_versions.append(version)
 
-    def write(self, resource_id: str, transaction_timestamp: float, update_value: int):
+    def write(self, resource_id: str, transaction_id: str, transaction_timestamp: float, update_value: int):
         # WRITE VERSION AND RETURN OLD VALUE
 
         version = self.__get_less_or_equal_largest_version(resource_id, transaction_timestamp)
@@ -186,8 +186,9 @@ class VersionController:
             )
 
         else:
-            self.__insert_new_version(resource_id, transaction_timestamp, update_value)
-            self.__log_writer("New version of resource", resource_id, "is created with timestamp", transaction_timestamp)
+            self.__insert_new_version(resource_id, transaction_id, transaction_timestamp, update_value)
+            self.__log_writer.console_log(
+                "New version of resource", resource_id, "is created with timestamp", transaction_timestamp)
 
     def __get_cascading_rollback_transaction_ids(self, rollback_transaction_id: str) -> list[str]:
         # RETURN CASCADING READER OF EVERY VERSION BY CERTAIN TRANSACTION
@@ -261,8 +262,8 @@ class VersionController:
     def __print_version(self, version: ResourceVersion):
         self.__log_writer.console_log(
             "(", 
-            f"Write-Timestamp: {version.get_write_timestamp()}", 
-            f"Read-Timestamp: {version.get_read_timestamp()}",
+            f"Write-Timestamp: {version.get_write_timestamp()},", 
+            f"Read-Timestamp: {version.get_read_timestamp()},",
             f"Content-Value: {version.get_value()}",
             ")"
         )
