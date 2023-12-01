@@ -130,15 +130,18 @@ class OCCResourceHandler:
         # Loop over other transactions for comparison
         for other_transaction_id, other_transaction_container in self.__transaction_containers.items():
             
+            # Only check other transaction that is finished
             if other_transaction_container.get_validation_timestamp() is None:
                 continue
             
+            # Only check other transaction that finish before current validation timestamp
             if (
                 other_transaction_id == transaction_id 
                 or current_validation_timestamp <= other_transaction_container.get_validation_timestamp()
             ):
                 continue
-
+            
+            # impossible to be None because validation and writing is atomic process
             other_finish_timestamp = other_transaction_container.get_finish_timestamp()
 
             if (other_finish_timestamp < current_start_timestamp):
