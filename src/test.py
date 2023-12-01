@@ -6,7 +6,7 @@ from OCC.OCCTransactionManager import OCCTransactionManager
 
 def test():
 
-    file_name = "occ/0"
+    file_name = "occ/1"
     choice = 2
 
     transaction_manager: TransactionManager | None = None

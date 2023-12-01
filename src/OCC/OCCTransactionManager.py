@@ -54,6 +54,7 @@ class OCCTransactionManager(TransactionManager):
 
     def __abort(self, transaction_id: str):
         # ADD TRANSACTION TO ROLLBACK-QUEUE
+        self.__resource_handler.rollback(transaction_id)
         done_instructions = self.__done_instruction.pop(transaction_id, [])
         self._console_log("Transaction", transaction_id, "is aborting")
         self.__rollback_queue.append(done_instructions)
