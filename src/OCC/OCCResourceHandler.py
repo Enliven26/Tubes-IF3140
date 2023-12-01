@@ -124,19 +124,19 @@ class OCCResourceHandler:
             return
 
         current_start_timestamp = current_transaction.get_start_timestamp()
-        current_finish_timestamp = current_transaction.get_finish_timestamp()
         current_write_history = self.__write_history.get(transaction_id, [])
 
         # Loop over other transactions for comparison
         for other_transaction_id, other_transaction_container in self.__transaction_containers.items():
             if other_transaction_id != transaction_id:
                 other_start_timestamp = other_transaction_container.get_start_timestamp()
+                other_finish_timestamp = other_transaction_container.get_finish_timestamp()
 
                 # Check for conflicts based on finish and start timestamps
                 if (
-                    current_start_timestamp < other_start_timestamp
-                    and current_finish_timestamp is not None
-                    and current_finish_timestamp > other_start_timestamp
+                    other_start_timestamp < current_start_timestamp
+                    and other_finish_timestamp is not None
+                    and other_finish_timestamp > current_start_timestamp
                 ):
                     # Handle the case where validation fails
                     raise FailedOCCValidation(
@@ -147,8 +147,8 @@ class OCCResourceHandler:
                 for resource_id in current_write_history:
                     if resource_id in self.__write_history.get(other_transaction_id, []):
                         if (
-                            current_finish_timestamp is not None
-                            and other_start_timestamp < current_finish_timestamp < other_transaction_container.get_validation_timestamp()
+                            other_finish_timestamp is not None
+                            and current_start_timestamp < other_finish_timestamp < current_transaction.get_validation_timestamp()
                             and resource_id in self.__read_history.get(other_transaction_id, [])
                         ):
                             # Handle the case where validation fails
