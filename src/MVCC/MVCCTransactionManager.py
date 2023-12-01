@@ -66,6 +66,7 @@ class MVCCTransactionManager(TransactionManager):
 
     def __abort_all(self, transaction_ids: list[str]):
         # ADD LIST OF TRANSACTION TO ROLLBACK-QUEUE
+
         for transaction_id in transaction_ids:
             self.__abort(transaction_id)
 

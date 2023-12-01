@@ -11,7 +11,7 @@ class TransactionInfo:
         self.transaction = transaction
         self.transaction_container = OCCTransactionContainer(transaction)
 
-class MVCCTransactionManager(TransactionManager):
+class OCCTransactionManager(TransactionManager):
 
     def __init__(self, file_path: str) -> None:
 
@@ -91,6 +91,7 @@ class MVCCTransactionManager(TransactionManager):
                 raise e
             
             transaction_id = instruction.get_transaction_id()
+
             self._console_log(
                 f"[ OCC Validation failed, starting rollback ]"
             )

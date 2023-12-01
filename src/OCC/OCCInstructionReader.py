@@ -15,7 +15,8 @@ class OCCInstructionReader(InstructionReader):
         if (type == InstructionType.R):
             return OCCReadInstruction(
                 instruction_line.transaction_id,
-                self.__resource_handler
+                self.__resource_handler,
+                instruction_line.resource_id,
             )
 
         elif (type == InstructionType.W):

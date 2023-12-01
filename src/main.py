@@ -1,5 +1,6 @@
 from twophase.TwoPhaseTransactionManager import TwoPhaseTransactionManager
 from MVCC.MVCCTransactionManager import MVCCTransactionManager
+from OCC.OCCTransactionManager import OCCTransactionManager
 from cores.TransactionManager import TransactionManager
 import os 
 
@@ -35,6 +36,9 @@ def main():
 
     if (choice == 1):
         transaction_manager = TwoPhaseTransactionManager(file_path)
+    
+    elif (choice == 2):
+        transaction_manager = OCCTransactionManager(file_path)
 
     elif (choice == 3):
         transaction_manager = MVCCTransactionManager(file_path)

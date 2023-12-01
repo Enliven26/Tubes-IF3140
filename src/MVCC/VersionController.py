@@ -88,7 +88,7 @@ class VersionController:
 
         readings.add(creator_transaction_id)
 
-    def __get_readers(self, creator_transaction_id: str) -> list[str]:
+    def __get_readers(self, creator_transaction_id: str) -> set[str]:
         return self.__version_readers.get(creator_transaction_id, set())
 
     def __get_or_create_resource_versions_if_not_exist(self, resource_id: str) -> list[ResourceVersion]:

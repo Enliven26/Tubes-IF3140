@@ -19,7 +19,7 @@ class OCCResourceHandler:
         # Snapshot is in form of dict with key: resource id and value: value of the resource
         self.__snapshots: dict[str, dict[str, int]] = {}
 
-        self.__transaction_containers: dict[str, OCCTransactionContainer] = []
+        self.__transaction_containers: dict[str, OCCTransactionContainer] = {}
 
     def __add_transaction_if_not_exist(self, transaction_container: OCCTransactionContainer):
         transaction_id = transaction_container.get_id()
@@ -110,7 +110,7 @@ class OCCResourceHandler:
         for resource_id in write_history:
             self.__resource_manager.write(resource_id, snapshot[resource_id])
 
-    def __validate(self, transaction_id: str) -> bool:
+    def __validate(self, transaction_id: str):
         # VALIDATE TRANSACTION BEFORE COMMIT
 
         self.__log_writer.console_log(f"[ Validating transaction {transaction_id} before commit ]")
@@ -120,7 +120,7 @@ class OCCResourceHandler:
         if current_transaction is None:
             # If the current transaction is not found, it means it didn't read or write any resources.
             # Return True without further validation.
-            return True
+            return
 
         current_start_timestamp = current_transaction.get_start_timestamp()
         current_finish_timestamp = current_transaction.get_finish_timestamp()
@@ -138,7 +138,7 @@ class OCCResourceHandler:
                     and current_finish_timestamp > other_start_timestamp
                 ):
                     # Handle the case where validation fails
-                    raise ForbiddenOptimisticCommit(
+                    raise FailedOCCValidation(
                         f"Conflict detected between transactions {transaction_id} and {other_transaction_id}"
                     )
 
@@ -151,18 +151,22 @@ class OCCResourceHandler:
                             and resource_id in self.__read_history.get(other_transaction_id, [])
                         ):
                             # Handle the case where validation fails
-                            raise ForbiddenOptimisticCommit(
+                            raise FailedOCCValidation(
                                 f"Conflict detected for resource {resource_id} between transactions "
                                 f"{transaction_id} and {other_transaction_id}"
                             )
 
         # If the loop completes without raising an exception, validation succeeds
-        return True
+        return
 
     def commit(self, transaction_id: str):
 
-        if (not self.__validate(transaction_id)):
-            raise FailedOCCValidation()
+        try:
+            self.__validate(transaction_id)
+
+        except FailedOCCValidation as e:
+            self.__log_writer.console_log(e.get_message())
+            raise e
         
         self.__write_commit(transaction_id)
         self.__clear_data(transaction_id)
