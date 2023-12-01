@@ -1,10 +1,10 @@
 from cores.Instruction import Instruction
 from MVCC.VersionController import VersionController
 from cores.Instruction import InstructionType
-from cores.transactions import DynamicTimestampTransaction
+from MVCC.MVCCTransaction import MVCCTransaction
 
 class MVCCTransactionContainer:
-    def __init__(self, transaction: DynamicTimestampTransaction) -> None:
+    def __init__(self, transaction: MVCCTransaction) -> None:
         self.__transaction = transaction
 
     def get_id(self):

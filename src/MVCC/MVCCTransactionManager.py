@@ -3,12 +3,12 @@ from MVCC.MVCCInstructionReader import MVCCInstructionReader
 from cores.Instruction import Instruction, InstructionType
 from MVCC.VersionController import VersionController
 from collections import deque
-from cores.transactions import DynamicTimestampTransaction
+from MVCC.MVCCTransaction import MVCCTransaction
 from MVCC.instructions import MVCCTransactionContainer
 from MVCC.exceptions import ForbiddenTimestampWriteException
 
 class TransactionInfo:
-    def __init__(self, transaction: DynamicTimestampTransaction) -> None:
+    def __init__(self, transaction: MVCCTransaction) -> None:
         self.transaction = transaction
         self.transaction_container = MVCCTransactionContainer(transaction)
 
@@ -116,7 +116,7 @@ class MVCCTransactionManager(TransactionManager):
     def _process_instruction(self, instruction: Instruction):
         transaction_id = instruction.get_transaction_id()
         if (self.__transactions.get(transaction_id) == None):
-            transaction = DynamicTimestampTransaction(transaction_id)
+            transaction = MVCCTransaction(transaction_id)
             self.__transactions[transaction_id] = TransactionInfo(transaction)
             
         self.__process_single_instruction(instruction, handle_rollback=True)
@@ -127,7 +127,7 @@ class MVCCTransactionManager(TransactionManager):
     def _is_finish_or_stop(self) -> bool:
         return True
     
-    def __print_transaction_status(self, transaction: DynamicTimestampTransaction):
+    def __print_transaction_status(self, transaction: MVCCTransaction):
 
         status_str = ""
 

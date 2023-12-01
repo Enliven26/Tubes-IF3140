@@ -4,7 +4,7 @@ from cores.Instruction import Instruction, InstructionType
 from twophase.LockManager import LockManager
 from twophase.TwoPhaseResourceHandler import TwoPhaseResourceHandler
 from collections import deque
-from cores.transactions import StaticTimestampTransaction
+from twophase.TwoPhaseTransaction import TwoPhaseTransaction
 from twophase.exceptions import LockSharingException
 
 
@@ -24,7 +24,7 @@ class TwoPhaseTransactionManager(TransactionManager):
 
         super().__init__(instruction_reader)
 
-        self.__transactions: dict[str, StaticTimestampTransaction] = {}
+        self.__transactions: dict[str, TwoPhaseTransaction] = {}
         self.__wait_queue: deque[Instruction] = deque()
         self.__rollback_queue: deque[list[Instruction]] = deque()
         self.__done_instruction: dict[str, list[Instruction]] = {}
@@ -194,7 +194,7 @@ class TwoPhaseTransactionManager(TransactionManager):
     def _process_instruction(self, instruction: Instruction):
         transaction_id = instruction.get_transaction_id()
         if (self.__transactions.get(transaction_id) == None):
-            self.__transactions[transaction_id] = StaticTimestampTransaction(transaction_id)
+            self.__transactions[transaction_id] = TwoPhaseTransaction(transaction_id)
             
         self.__process_single_instruction(
             instruction, 

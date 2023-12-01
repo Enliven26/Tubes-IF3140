@@ -12,25 +12,25 @@ class Transaction:
         self.__id = id
         self.__status = TransactionStatus.GOING
 
-    def get_id(self):
+    def get_id(self) -> str:
         return self.__id
     
     def reset_status(self):
         self.__status = TransactionStatus.GOING
     
-    def is_rolling_back(self):
+    def is_rolling_back(self) -> bool:
         return self.__status == TransactionStatus.ROLLINGBACK
     
     def roll_back(self):
         self.__status = TransactionStatus.ROLLINGBACK
     
-    def is_waiting(self):
+    def is_waiting(self) -> bool:
         return self.__status == TransactionStatus.WAITING
     
     def wait(self):
         self.__status = TransactionStatus.WAITING
     
-    def is_committed(self):
+    def is_committed(self) -> bool:
         return self.__status == TransactionStatus.COMMITTED
     
     def commit(self):
@@ -44,7 +44,7 @@ class StaticTimestampTransaction(Transaction):
         # solve bug when timestamp for 2 transaction is equal
         time.sleep(1e-7)
 
-    def get_timestamp(self):
+    def _get_timestamp(self) -> float:
         return self.__timestamp
     
 class DynamicTimestampTransaction(Transaction):
@@ -59,11 +59,8 @@ class DynamicTimestampTransaction(Transaction):
         # solve bug when timestamp for 2 transaction is equal
         time.sleep(1e-7)
 
-    def get_timestamp(self):
+    def _get_timestamp(self) -> float:
         return self.__timestamp
-    
-    def reset_timestamp(self):
-        self.__reset_timestamp()
     
     def roll_back(self):
         super().roll_back()
