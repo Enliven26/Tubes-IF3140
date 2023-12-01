@@ -1,5 +1,5 @@
 from enum import Enum
-import time
+from cores.Timestamp import TimeStamp
 
 class TransactionStatus(Enum):
     GOING = 0
@@ -39,10 +39,7 @@ class Transaction:
 class StaticTimestampTransaction(Transaction):
     def __init__(self, id: str) -> None:
         super().__init__(id)
-        self.__timestamp = time.time()
-
-        # solve bug when timestamp for 2 transaction is equal
-        time.sleep(1e-7)
+        self.__timestamp = TimeStamp.time()
 
     def _get_timestamp(self) -> float:
         return self.__timestamp
@@ -54,10 +51,7 @@ class DynamicTimestampTransaction(Transaction):
         self.__reset_timestamp()
 
     def __reset_timestamp(self):
-        self.__timestamp = time.time()
-
-        # solve bug when timestamp for 2 transaction is equal
-        time.sleep(1e-7)
+        self.__timestamp = TimeStamp.time()
 
     def _get_timestamp(self) -> float:
         return self.__timestamp

@@ -1,4 +1,5 @@
 from cores.transactions import DynamicTimestampTransaction
+from cores.Timestamp import TimeStamp
 
 class MVCCTransaction(DynamicTimestampTransaction):
     def __init__(self, id: str) -> None:
@@ -14,4 +15,11 @@ class MVCCTransaction(DynamicTimestampTransaction):
     
     def get_finish_timestamp(self) -> float | None:
         return self.__finish_timestamp
+    
+    def set_validate_timestamp(self):
+        self.__validation_timestamp = TimeStamp.time()
+    
+    def commit(self):
+        super().commit()
+        self.__finish_timestamp = TimeStamp.time()
 
