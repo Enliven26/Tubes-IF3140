@@ -43,7 +43,7 @@ class OCCResourceHandler:
         if (history is None):
             history = []
             self.__write_history[transaction_id] = history
-
+        
         history.append(resource_id)
 
     def __get_or_create_snapshot(self, transaction_id) -> dict[str, int]:
@@ -97,7 +97,6 @@ class OCCResourceHandler:
     
     def __clear_data(self, transaction_id: str):
         self.__read_history.pop(transaction_id, [])
-        self.__write_history.pop(transaction_id, [])
         self.__snapshots.pop(transaction_id, [])
 
     def rollback(self, transaction_id: str):
@@ -116,17 +115,18 @@ class OCCResourceHandler:
         self.__log_writer.console_log(f"[ Validating transaction {transaction_id} before commit ]")
 
         current_transaction = self.__transaction_containers.get(transaction_id)
-        current_transaction.set_validate_timestamp()
 
         if current_transaction is None:
             # If the current transaction is not found, it means it didn't read or write any resources.
             # Return True without further validation.
             return
+        
+        current_transaction.set_validate_timestamp()
 
         current_start_timestamp = current_transaction.get_start_timestamp()
         current_validation_timestamp = current_transaction.get_validation_timestamp()
         current_read_history = self.__read_history.get(transaction_id, [])
-
+     
         # Loop over other transactions for comparison
         for other_transaction_id, other_transaction_container in self.__transaction_containers.items():
             
