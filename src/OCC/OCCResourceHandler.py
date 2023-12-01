@@ -124,38 +124,37 @@ class OCCResourceHandler:
             return
 
         current_start_timestamp = current_transaction.get_start_timestamp()
-        current_write_history = self.__write_history.get(transaction_id, [])
+        current_validation_timestamp = current_transaction.get_validation_timestamp()
+        current_read_history = self.__read_history.get(transaction_id, [])
 
         # Loop over other transactions for comparison
         for other_transaction_id, other_transaction_container in self.__transaction_containers.items():
-            if other_transaction_id != transaction_id:
-                other_start_timestamp = other_transaction_container.get_start_timestamp()
-                other_finish_timestamp = other_transaction_container.get_finish_timestamp()
+            
+            if other_transaction_container.get_validation_timestamp() is None:
+                continue
+            
+            if (
+                other_transaction_id == transaction_id 
+                or current_validation_timestamp <= other_transaction_container.get_validation_timestamp()
+            ):
+                continue
 
-                # Check for conflicts based on finish and start timestamps
-                if (
-                    other_start_timestamp < current_start_timestamp
-                    and other_finish_timestamp is not None
-                    and other_finish_timestamp > current_start_timestamp
-                ):
-                    # Handle the case where validation fails
-                    raise FailedOCCValidation(
-                        f"Conflict detected between transactions {transaction_id} and {other_transaction_id}"
-                    )
+            other_finish_timestamp = other_transaction_container.get_finish_timestamp()
 
-                # Check for conflicts based on read and write history
-                for resource_id in current_write_history:
-                    if resource_id in self.__write_history.get(other_transaction_id, []):
-                        if (
-                            other_finish_timestamp is not None
-                            and current_start_timestamp < other_finish_timestamp < current_transaction.get_validation_timestamp()
-                            and resource_id in self.__read_history.get(other_transaction_id, [])
-                        ):
-                            # Handle the case where validation fails
-                            raise FailedOCCValidation(
-                                f"Conflict detected for resource {resource_id} between transactions "
-                                f"{transaction_id} and {other_transaction_id}"
-                            )
+            if (other_finish_timestamp < current_start_timestamp):
+                continue
+
+            if not (current_start_timestamp < other_finish_timestamp and other_finish_timestamp < current_validation_timestamp):
+                raise Exception("Invalid timestamp for validation")
+
+            # Check for conflicts based on read and write history
+            for resource_id in current_read_history:
+                if resource_id in self.__write_history.get(other_transaction_id, []):
+                        # Handle the case where validation fails
+                        raise  FailedOCCValidation(
+                            f"Conflict detected for resource {resource_id} between transactions "
+                            f"{transaction_id} and {other_transaction_id}"
+                        )
 
         # If the loop completes without raising an exception, validation succeeds
         return
