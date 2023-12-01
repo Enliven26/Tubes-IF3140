@@ -64,9 +64,9 @@ class VersionController:
         # two data structure keeping the same data for read efficiency
 
         # 1. Map transaction id to list of another transaction ids that read version created by the first
-        self.__version_readers: dict[str, list[str]] = {}
+        self.__version_readers: dict[str, set[str]] = {}
         # 2. Map transaction id to list of another transaction ids that create the version read by the first
-        self.__version_readings: dict[str, list[str]] = {}
+        self.__version_readings: dict[str, set[str]] = {}
 
         self.__log_writer = LogWriter("VERSION CONTROLLER")
 
@@ -74,22 +74,22 @@ class VersionController:
         readers = self.__version_readers.get(creator_transaction_id)
 
         if (readers is None):
-            readers = []
+            readers = set()
             self.__version_readers[creator_transaction_id] = readers
 
-        readers.append(reader_transaction_id)
+        readers.add(reader_transaction_id)
 
         # write redundancy for read efficiency
         readings = self.__version_readings.get(reader_transaction_id)
 
         if (readings is None):
-            readings = []
+            readings = set()
             self.__version_readings[reader_transaction_id] = readings
 
-        readings.append(creator_transaction_id)
+        readings.add(creator_transaction_id)
 
     def __get_readers(self, creator_transaction_id: str) -> list[str]:
-        return self.__version_readers.get(creator_transaction_id, [])
+        return self.__version_readers.get(creator_transaction_id, set())
 
     def __get_or_create_resource_versions_if_not_exist(self, resource_id: str) -> list[ResourceVersion]:
         versions = self.__resource_versions.get(resource_id)
@@ -128,7 +128,7 @@ class VersionController:
 
         # Record reading version history for cascading rollback purpose
         # Only added for version that is not committed yet and not created by the same transaction
-        if (creator_transaction_id != transaction_id and not version.is_committed()):
+        if (creator_transaction_id != transaction_id and not version.is_committed() and creator_transaction_id):
             self.__add_reader(creator_transaction_id, transaction_id)
 
         value = version.read(transaction_timestamp)
@@ -174,7 +174,7 @@ class VersionController:
 
         if (version.get_write_timestamp() == transaction_timestamp):
             old_value = version.update(update_value)
-            self.__log_writer(
+            self.__log_writer.console_log(
                 "Version of resource", 
                 resource_id, 
                 "with write-timestamp", 
@@ -218,7 +218,7 @@ class VersionController:
 
     def __rollback(self, transaction_id: str) -> list[str]:
         # REMOVE ALL VERSIONS AND DATA BY THE TRANSACTION 
-
+        
         # removing versions created by this transaction
         transaction_versions = self.__transaction_versions.pop(transaction_id, [])
 
@@ -226,13 +226,18 @@ class VersionController:
             self.__resource_versions[version.get_resource_id()].remove(version)
 
         # removing reding data of this transaction 
-        readings = self.__version_readings.pop(transaction_id, []) 
+        readings = self.__version_readings.pop(transaction_id, set()) 
+
         # also removing this transaction from being reader of other versions
+        # version reader of another transaction might be missing in cascading rollback process
         for reading in readings:
-            self.__version_readers[reading].remove(transaction_id)
+            readers = self.__version_readers.get(reading)
+
+            if (readers is not None):
+                readings.remove(transaction_id)
 
         # Only pop the reader list and not the reading counterpart because it will also be removed in the cascading process
-        return self.__version_readers.pop(transaction_id, [])
+        return self.__version_readers.pop(transaction_id, set())
     
     def cascade_rollback(self, transaction_id: str) -> list[str]:
         # REMOVE ALL VERSIONS AND DATA OF TRANSACTION THAT IS INVOLVED IN CASCADING ROLLBACK
@@ -247,13 +252,16 @@ class VersionController:
     
     def commit(self, transaction_id: str):
         # Remove committed transaction from reading list so it can't be rolled-back when version creator initiate cascading rollback
-        readings = self.__version_readings.pop(transaction_id, [])
+        readings = self.__version_readings.pop(transaction_id, set())
 
         for reading in readings:
-            self.__version_readers[reading].remove(transaction_id)
+            readers = self.__version_readers.get(reading)
+            # the other transaction might be committed and the readers data is deleted
+            if (readers):
+                readers.remove(transaction_id)
 
         # Remove readers history that read versions created by committed transaction since committed transaction will never be rolled-back
-        self.__version_readers.pop(transaction_id, [])
+        self.__version_readers.pop(transaction_id, set())
 
         # Commit version created by the transaction
         for version in self.__transaction_versions.get(transaction_id, []):

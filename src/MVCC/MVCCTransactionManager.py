@@ -94,27 +94,23 @@ class MVCCTransactionManager(TransactionManager):
         ):
         # EXECUTE INSTRUCTION AND HANDLE ROLLBACK IF FAIL
 
-        while True:
-            try:
-                self.__execute_instruction(instruction)
-                break
+        try:
+            self.__execute_instruction(instruction)
 
-            except ForbiddenTimestampWriteException as e:
 
-                if (not handle_rollback):
-                    raise e
-                
-                transaction_id = instruction.get_transaction_id()
-                self._console_log(
-                    "[ Transaction", 
-                    transaction_id, 
-                    f"failed executing {instruction},", 
-                    "starting cascading rollback ]"
-                )
+        except ForbiddenTimestampWriteException as e:
 
-                transaction_ids = self.__version_controller.cascade_rollback(transaction_id)
-                self.__abort_all(transaction_ids)
-                self.__process_rollback()
+            if (not handle_rollback):
+                raise e
+            
+            transaction_id = instruction.get_transaction_id()
+            self._console_log(
+                f"[ Failed executing {instruction}, starting cascading rollback ]"
+            )
+            self.__add_to_done_list(instruction)
+            transaction_ids = self.__version_controller.cascade_rollback(transaction_id)
+            self.__abort_all(transaction_ids)
+            self.__process_rollback()
 
 
     def _process_instruction(self, instruction: Instruction):

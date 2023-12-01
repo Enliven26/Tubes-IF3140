@@ -1,0 +1,12 @@
+# MVCC Case:
+# Schedule with cascading rollback
+
+W T1 X=999
+R T2 X
+R T2 Y
+R T3 X
+R T3 Y
+W T1 Y=888
+C T2
+C T1
+C T3
