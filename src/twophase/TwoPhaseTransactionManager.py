@@ -16,8 +16,6 @@ class TwoPhaseTransactionManager(TransactionManager):
 
     # 2. Because of point number 1, it's impossible that instructions in wait-queue of certain transaction is out of order.
 
-    # 3. 
-
     def __init__(self, file_path: str) -> None:
 
         self.__lock_manager = LockManager()
