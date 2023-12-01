@@ -43,3 +43,6 @@ class OCCTransactionContainer:
     
     def get_finish_timestamp(self) -> float | None:
         return self.__transaction.get_finish_timestamp()
+
+    def set_validate_timestamp(self):
+        self.__transaction.set_validate_timestamp()

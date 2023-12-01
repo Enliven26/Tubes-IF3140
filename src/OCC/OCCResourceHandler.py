@@ -116,6 +116,7 @@ class OCCResourceHandler:
         self.__log_writer.console_log(f"[ Validating transaction {transaction_id} before commit ]")
 
         current_transaction = self.__transaction_containers.get(transaction_id)
+        current_transaction.set_validate_timestamp()
 
         if current_transaction is None:
             # If the current transaction is not found, it means it didn't read or write any resources.
